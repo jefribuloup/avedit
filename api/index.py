@@ -70,10 +70,17 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <div class="player" id="playerBox"></div>
       <div class="fname" id="fname"></div>
 
-      <div class="timeline">
-        <div class="track"><div class="sel" id="sel"></div></div>
-        <input type="range" id="rStart" min="0" max="100" step="0.01" value="0">
-        <input type="range" id="rEnd" min="0" max="100" step="0.01" value="100">
+      <div class="wavebox">
+        <canvas id="wave"></canvas>
+        <div class="wtools">
+          <button type="button" id="zOut" title="Zoom out">−</button>
+          <input type="range" id="zoom" min="0" max="100" step="1" value="0" aria-label="Zoom">
+          <button type="button" id="zIn" title="Zoom in">＋</button>
+          <button type="button" id="zSel" class="ghost">🔍 Zoom ke pilihan</button>
+          <button type="button" id="zAll" class="ghost">Lihat semua</button>
+        </div>
+        <input type="range" id="pan" class="pan" min="0" max="0" step="0.01" value="0" aria-label="Geser tampilan">
+        <small class="hint">Seret penanda putih (awal) dan ungu (akhir) untuk memilih bagian. Klik gelombang untuk pindah posisi putar. Desktop: Ctrl + scroll = zoom, Shift + scroll = geser.</small>
       </div>
 
       <div class="grid">
