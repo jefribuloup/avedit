@@ -16,7 +16,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0612">
-<title>CutIt — Potong Audio & Video</title>
+<title>AVEdit — Potong Audio & Video</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
