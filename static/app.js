@@ -61,9 +61,15 @@
     ff.on('progress', ({ progress }) => {
       $('prog').style.width = Math.max(0, Math.min(100, progress * 100)) + '%';
     });
+    const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
+    const blobURL = async (url, type) => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('Gagal memuat ' + url);
+      return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type }));
+    };
     await ff.load({
-      coreURL: '/static/ffmpeg/ffmpeg-core.js',
-      wasmURL: '/static/ffmpeg/ffmpeg-core.wasm',
+      coreURL: await blobURL(base + 'ffmpeg-core.js', 'text/javascript'),
+      wasmURL: await blobURL(base + 'ffmpeg-core.wasm', 'application/wasm'),
     });
     return ff;
   }
