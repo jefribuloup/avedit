@@ -23,7 +23,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="/"><span class="logo"></span><span>AVEdit</span></a>
+    <a class="brand" href="/"><span>AVEdit</span></a>
     <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">☰</button>
     <div class="links" id="links">
       <a href="#editor-sec">Editor</a>
