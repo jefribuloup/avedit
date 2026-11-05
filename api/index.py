@@ -23,7 +23,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="/"><span class="logo">✂️</span><span>CutIt</span></a>
+    <a class="brand" href="/"><span>AVEdit</span></a>
     <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">☰</button>
     <div class="links" id="links">
       <a href="#editor-sec">Editor</a>
@@ -156,7 +156,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
   <div class="footer-bar">
-    <span>© {{YEAR}} CutIt. Semua hak dilindungi.</span>
+    <span>© {{YEAR}} AVEdit. Semua hak dilindungi.</span>
     <a href="#top" class="totop">↑ Kembali ke atas</a>
   </div>
 </footer>
