@@ -56,11 +56,11 @@ h1{margin:0;font-size:clamp(26px,5vw,42px);line-height:1.15}
 .timeline{position:relative;height:38px;margin-bottom:10px}
 .track{position:absolute;left:0;right:0;top:16px;height:6px;border-radius:3px;background:var(--line)}
 .sel{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:3px}
-.timeline input[type=range]{position:absolute;left:0;width:100%;top:4px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none;height:30px}
+/* .timeline input[type=range]{position:absolute;left:0;width:100%;top:4px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none;height:30px}
 .timeline input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:20px;height:30px;border-radius:6px;background:#fff;border:3px solid var(--acc);cursor:ew-resize}
 .timeline input[type=range]::-moz-range-thumb{pointer-events:auto;width:14px;height:24px;border-radius:6px;background:#fff;border:3px solid var(--acc);cursor:ew-resize}
 .timeline input[type=range]::-webkit-slider-runnable-track{background:none}
-.timeline input[type=range]::-moz-range-track{background:none}
+.timeline input[type=range]::-moz-range-track{background:none} */
 
 /* FORM */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -107,4 +107,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
   .linkrow{flex-direction:column}
   .actions button{flex:1 1 100%}
   .result .acts>*{flex:1 1 100%;text-align:center}
+}
+
+/* WAVEFORM */
+.wavebox{margin-bottom:12px}
+#wave{display:block;width:100%;height:150px;border-radius:12px;background:var(--bg);border:1px solid var(--line);touch-action:pan-y;cursor:pointer}
+.wtools{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.wtools button{padding:8px 12px}
+.wtools input[type=range]{flex:1 1 120px;min-width:100px;accent-color:var(--acc)}
+.pan{display:block;width:100%;margin:8px 0 0;accent-color:var(--acc)}
+.pan:disabled,#zoom:disabled{opacity:.35}
+@media (max-width:520px){
+  #wave{height:125px}
+  .wtools #zSel,.wtools #zAll{flex:1 1 45%}
 }
