@@ -23,7 +23,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="/"><span>AVEdit</span></a>
+    <a class="brand" href="/"><span class="logo">✂️</span><span>CutIt</span></a>
     <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">☰</button>
     <div class="links" id="links">
       <a href="#editor-sec">Editor</a>
@@ -126,14 +126,40 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <h2>Panduan singkat</h2>
     <ol>
       <li>Unggah file dari perangkat atau tempel link langsung ke file.</li>
-      <li>Geser slider atau isi detik Mulai &amp; Selesai. Tombol 📍 mengambil posisi player saat ini.</li>
+      <li>Geser penanda di waveform atau isi detik Mulai &amp; Selesai. Tombol 📍 mengambil posisi player saat ini.</li>
       <li>Pilih mode, klik <b>Potong &amp; Unduh</b>.</li>
       <li>Salah potong? Klik <b>Reset rentang</b>, <b>Ganti file</b>, atau <b>Edit hasil ini</b> untuk memotong lagi.</li>
     </ol>
   </section>
 </main>
 
-<footer class="foot">© AVEdit</footer>
+<footer class="footer">
+  <div class="footer-in">
+    <div class="f-col f-brand">
+      <a class="brand" href="/"><span class="logo">✂️</span><span>CutIt</span></a>
+      <p>Pemotong audio &amp; video sederhana yang berjalan langsung di browser. Tanpa instalasi, tanpa ribet.</p>
+    </div>
+    <div class="f-col">
+      <h3>Menu</h3>
+      <ul>
+        <li><a href="#editor-sec">Editor</a></li>
+        <li><a href="#panduan">Panduan</a></li>
+        <li><a href="/api/health">Status layanan</a></li>
+      </ul>
+    </div>
+    <div class="f-col">
+      <h3>Format didukung</h3>
+      <ul class="tags">
+        <li>MP4</li><li>MOV</li><li>WEBM</li><li>MKV</li>
+        <li>MP3</li><li>WAV</li><li>M4A</li><li>AAC</li><li>OGG</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <span>© {{YEAR}} CutIt. Semua hak dilindungi.</span>
+    <a href="#top" class="totop">↑ Kembali ke atas</a>
+  </div>
+</footer>
 
 <script src="/static/ffmpeg/ffmpeg.js"></script>
 <script src="/static/app.js"></script>
@@ -144,7 +170,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 @app.get("/")
 def index():
-    return Response(INDEX_HTML, mimetype="text/html")
+    html = INDEX_HTML.replace("{{YEAR}}", str(datetime.now(timezone.utc).year))
+    return Response(html, mimetype="text/html")
 
 
 @app.get("/api/health")
