@@ -136,7 +136,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <footer class="footer">
   <div class="footer-in">
     <div class="f-col f-brand">
-      <a class="brand" href="/"><span class="logo">✂️</span><span>CutIt</span></a>
+      <a class="brand" href="/"><span>AVEdit</span></a>
       <p>Pemotong audio &amp; video sederhana yang berjalan langsung di browser. Tanpa instalasi, tanpa ribet.</p>
     </div>
     <div class="f-col">
