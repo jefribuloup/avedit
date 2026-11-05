@@ -10,6 +10,7 @@
   const NATIVE = /\.(mp4|m4v|mov|webm|mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i;
   const STEPS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
 
+  const tr = (k, p) => window.I18N.t(k, p);
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, '0')}`;
   const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
   const status = (t, err = false) => { const el = $('status'); el.textContent = t; el.classList.toggle('err', err); };
@@ -55,7 +56,7 @@
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value); got += value.length;
-      startStatus(`Mengunduh… ${mb(got)}${total ? ' / ' + mb(total) : ''}`);
+      startStatus(`${tr('s.downloading')} ${mb(got)}${total ? ' / ' + mb(total) : ''}`);
     }
     return new Blob(chunks, { type: res.headers.get('Content-Type') || '' });
   }
@@ -63,16 +64,20 @@
   async function fromUrl(url) {
     let res;
     try {
-      startStatus('Menghubungi link…');
+      startStatus(tr('s.connecting'));
       res = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (res.url && !/^https:\/\//i.test(res.url)) throw new Error(tr('e.httpsRedirect'));
     } catch (e) {
-      startStatus('Link tidak bisa diakses langsung, mencoba lewat server…');
+      startStatus(tr('s.viaServer'));
       res = await fetch('/api/fetch?url=' + encodeURIComponent(url));
       if (!res.ok) {
-        let msg = 'Gagal mengambil link.';
-        try { msg = (await res.json()).error || msg; } catch (_) {}
-        throw new Error(msg + ' Unduh file lalu unggah lewat tab File Lokal.');
+        let msg = tr('e.fetch');
+        try {
+          const j = await res.json();
+          msg = { invalid_url: tr('e.invalid'), too_large: tr('e.tooLarge') }[j.code] || msg;
+        } catch (_) {}
+        throw new Error(msg + tr('e.fallback'));
       }
     }
     const blob = await readWithProgress(res);
@@ -81,7 +86,7 @@
     const hasExt = /\.(mp4|mov|mkv|webm|avi|mp3|wav|m4a|aac|ogg|flac)$/i.test(name);
     if (!hasExt) {
       const ext = EXT[type];
-      if (!ext) throw new Error('Link bukan file audio/video langsung.');
+      if (!ext) throw new Error(tr('e.notMedia'));
       name = (name || 'media') + '.' + ext;
     }
     return new File([blob], name, { type: type || '' });
@@ -89,7 +94,8 @@
 
   $('urlGo').onclick = async () => {
     const url = $('urlIn').value.trim();
-    if (!/^https?:\/\//i.test(url)) return startStatus('Masukkan link yang diawali http:// atau https://', true);
+    let u; try { u = new URL(url); } catch (_) { u = null; }
+    if (!u || u.protocol !== 'https:' || !u.hostname) return startStatus(tr('e.https'), true);
     $('urlGo').disabled = true;
     try { load(await fromUrl(url)); startStatus(''); }
     catch (e) { startStatus(e.message || String(e), true); }
@@ -121,15 +127,15 @@
     $('result').innerHTML = ''; status(''); $('progWrap').classList.add('hidden');
     media.onloadedmetadata = () => {
       dur = isFinite(media.duration) ? media.duration : 0;
-      if (!dur) { startStatus('Durasi file tidak terbaca.', true); return; }
+      if (!dur) { startStatus(tr('e.noDur'), true); return; }
       $('startCard').classList.add('hidden'); $('editor').classList.remove('hidden');
       setRange(0, dur); setView(0, dur);
       $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
       waveBusy = buildWave(f);
     };
     media.onerror = () => {
-      startStatus('Browser tidak bisa memutar file ini (format/codec tidak didukung).', true);
-      status('Browser tidak bisa memutar file ini (format/codec tidak didukung).', true);
+      startStatus(tr('e.noPlay'), true);
+      status(tr('e.noPlay'), true);
     };
     media.onplay = () => { cancelAnimationFrame(raf); tick(); };
     media.onpause = media.onended = media.onseeked = media.ontimeupdate = () => { if (media.paused) draw(); };
@@ -142,7 +148,7 @@
     selS = s; selE = e;
     if (document.activeElement !== nS) nS.value = s.toFixed(2);
     if (document.activeElement !== nE) nE.value = e.toFixed(2);
-    $('info').textContent = `Durasi potongan: ${fmt(e - s)}  (${fmt(s)} → ${fmt(e)})`;
+    $('info').textContent = tr('info', { len: fmt(e - s), s: fmt(s), e: fmt(e) });
     draw();
   }
   nS.oninput = () => setRange(Math.min(+nS.value || 0, selE), selE);
@@ -151,7 +157,7 @@
   $('setStart').onclick = () => setRange(Math.min(media.currentTime, selE), selE);
   $('setEnd').onclick = () => setRange(selS, Math.max(media.currentTime, selS));
   $('preview').onclick = () => { media.currentTime = selS; stopAt = selE; media.play(); };
-  $('resetRange').onclick = () => { setRange(0, dur); setView(0, dur); $('result').innerHTML = ''; status('Rentang dikembalikan ke seluruh durasi.'); };
+  $('resetRange').onclick = () => { setRange(0, dur); setView(0, dur); $('result').innerHTML = ''; status(tr('st.reset')); };
 
   /* ---------- VIEW / ZOOM ---------- */
   const xOf = (t) => ((t - vStart) / (vEnd - vStart)) * wave.clientWidth;
@@ -297,7 +303,7 @@
 
     // area di luar pilihan diredupkan
     const xs = xOf(selS), xe = xOf(selE);
-    g.fillStyle = 'rgba(7,4,13,.55)';
+    g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--dim').trim() || 'rgba(7,4,13,.55)';
     if (xs > 0) g.fillRect(0, RULER, Math.min(W, xs), H - RULER);
     if (xe < W) g.fillRect(Math.max(0, xe), RULER, W - Math.max(0, xe), H - RULER);
 
@@ -331,7 +337,7 @@
     await inst.writeFile(inName, new Uint8Array(await f.arrayBuffer()));
     const code = await inst.exec(['-i', inName, '-vn', '-ac', '1', '-ar', String(TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']);
     await inst.deleteFile(inName).catch(() => {});
-    if (code !== 0) throw new Error('tidak ada audio');
+    if (code !== 0) throw new Error(tr('e.noAudio'));
     const data = await inst.readFile('wave.wav');
     await inst.deleteFile('wave.wav').catch(() => {});
     return ctx.decodeAudioData(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
@@ -340,10 +346,10 @@
   async function buildWave(f) {
     const id = ++waveId;
     peaks = null; mono = null;
-    if (f.size > MAX_WAVE_MB * 1048576) { waveMsg = 'File besar — waveform dinonaktifkan agar tidak kehabisan memori (pemotongan tetap bisa).'; draw(); return; }
+    if (f.size > MAX_WAVE_MB * 1048576) { waveMsg = tr('w.big'); draw(); return; }
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) { waveMsg = 'Browser tidak mendukung waveform.'; draw(); return; }
-    waveMsg = 'Menganalisis audio…'; draw();
+    if (!Ctx) { waveMsg = tr('w.unsupported'); draw(); return; }
+    waveMsg = tr('w.analyzing'); draw();
     let ctx;
     try {
       ctx = new Ctx({ sampleRate: TARGET_SR });
@@ -351,7 +357,7 @@
       try { buf = await ctx.decodeAudioData(await f.arrayBuffer()); }
       catch (e) {
         if (NATIVE.test(f.name)) throw e;
-        waveMsg = 'Menganalisis audio lewat mesin ffmpeg…'; draw();
+        waveMsg = tr('w.analyzingFF'); draw();
         buf = await decodeViaFFmpeg(f, ctx);
       }
       if (id !== waveId) return;
@@ -371,7 +377,7 @@
       peaks = { min: pmin, max: pmax, gain: top > 0.001 ? Math.min(0.95 / top, 30) : 1 };
       waveMsg = '';
     } catch (e) {
-      if (id === waveId) waveMsg = 'Waveform tidak tersedia (tanpa audio / format tidak terbaca). Pemotongan tetap bisa.';
+      if (id === waveId) waveMsg = tr('w.na');
     } finally {
       if (ctx && ctx.close) ctx.close().catch(() => {});
       if (id === waveId) draw();
@@ -392,17 +398,19 @@
     $('editor').classList.add('hidden'); $('startCard').classList.remove('hidden');
   }
   $('changeFile').onclick = resetAll;
+  document.addEventListener('langchange', () => { if (dur) setRange(selS, selE); });
+  document.addEventListener('themechange', () => { if (dur) draw(); });
 
   /* ---------- FFMPEG ---------- */
   async function getFF() {
     if (ff) return ff;
-    status('Memuat mesin pemotong (sekali saja, ±30 MB)…');
+    status(tr('st.loadEngine'));
     const inst = new FFmpegWASM.FFmpeg();
     inst.on('progress', ({ progress }) => { $('prog').style.width = Math.max(0, Math.min(100, progress * 100)) + '%'; });
     const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
     const blobURL = async (url, type) => {
       const r = await fetch(url);
-      if (!r.ok) throw new Error('Gagal memuat ' + url);
+      if (!r.ok) throw new Error(tr('e.loadFail') + ' ' + url);
       return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type }));
     };
     await inst.load({
@@ -416,18 +424,18 @@
   $('cancel').onclick = () => {
     cancelled = true;
     if (ff) { try { ff.terminate(); } catch (_) {} ff = null; }
-    status('Proses dibatalkan.');
+    status(tr('st.cancelled'));
   };
 
   /* ---------- POTONG ---------- */
   $('cut').onclick = async () => {
     const s = selS, e = selE, d = e - s;
-    if (d <= 0) return status('Rentang potongan tidak valid.', true);
+    if (d <= 0) return status(tr('st.badRange'), true);
     cancelled = false;
     $('cut').classList.add('hidden'); $('cancel').classList.remove('hidden');
     $('result').innerHTML = ''; $('prog').style.width = '0'; $('progWrap').classList.remove('hidden');
     try {
-      if (waveBusy) { status('Menunggu analisis audio selesai…'); await waveBusy.catch(() => {}); }
+      if (waveBusy) { status(tr('st.waitWave')); await waveBusy.catch(() => {}); }
       if (cancelled) return;
       const f = await getFF();
       const isVideo = media.tagName === 'VIDEO';
@@ -435,7 +443,7 @@
       const inName = 'input.' + ext;
       const precise = $('mode').value === 'precise';
       let outExt = ext, args;
-      status('Membaca file…');
+      status(tr('st.reading'));
       await f.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
       if (!precise) {
         args = ['-ss', String(s), '-i', inName, '-t', String(d), '-c', 'copy', '-avoid_negative_ts', 'make_zero'];
@@ -447,10 +455,10 @@
         args = ['-ss', String(s), '-i', inName, '-t', String(d), '-vn', '-c:a', 'libmp3lame', '-q:a', '2'];
       }
       const outName = 'output.' + outExt;
-      status('Memotong…');
+      status(tr('st.cutting'));
       const code = await f.exec([...args, outName]);
       if (cancelled) return;
-      if (code !== 0) throw new Error('ffmpeg gagal (kode ' + code + '). Coba mode Presisi.');
+      if (code !== 0) throw new Error(tr('e.ffFail', { code }));
       const data = await f.readFile(outName);
       await f.deleteFile(inName).catch(() => {}); await f.deleteFile(outName).catch(() => {});
       const mime = (isVideo ? 'video/' : 'audio/') + (outExt === 'mp3' ? 'mpeg' : outExt);
@@ -460,15 +468,15 @@
       const pv = document.createElement(isVideo ? 'video' : 'audio'); pv.controls = true; pv.playsInline = true; pv.src = url;
       const acts = document.createElement('div'); acts.className = 'acts';
       const a = document.createElement('a'); a.className = 'dl'; a.href = url; a.download = resultName;
-      a.textContent = `⬇ Unduh ${resultName} (${mb(resultBlob.size)})`;
-      const again = document.createElement('button'); again.type = 'button'; again.textContent = '✏️ Edit hasil ini';
+      a.textContent = tr('r.dl', { name: resultName, size: mb(resultBlob.size) });
+      const again = document.createElement('button'); again.type = 'button'; again.textContent = tr('r.edit');
       again.onclick = () => load(new File([resultBlob], resultName, { type: mime }));
       acts.append(a, again);
       $('result').append(pv, acts);
-      $('prog').style.width = '100%'; status('Selesai ✔');
+      $('prog').style.width = '100%'; status(tr('st.done'));
     } catch (err) {
-      if (cancelled) status('Proses dibatalkan.');
-      else { console.error(err); status('Error: ' + (err.message || err), true); }
+      if (cancelled) status(tr('st.cancelled'));
+      else { console.error(err); status(tr('st.error') + (err.message || err), true); }
     } finally {
       $('cut').classList.remove('hidden'); $('cancel').classList.add('hidden');
       if (cancelled) $('progWrap').classList.add('hidden');
