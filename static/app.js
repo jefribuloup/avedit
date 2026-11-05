@@ -1,8 +1,14 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const rS = $('rStart'), rE = $('rEnd'), nS = $('nStart'), nE = $('nEnd'), sel = $('sel');
+  const nS = $('nStart'), nE = $('nEnd'), wave = $('wave'), zoomR = $('zoom'), pan = $('pan');
   let file = null, media = null, dur = 0, ff = null, objUrl = null, stopAt = null;
   let cancelled = false, resultBlob = null, resultName = '';
+  let selS = 0, selE = 0, vStart = 0, vEnd = 0, drag = null, raf = 0;
+  let mono = null, peaks = null, wsr = 8000, waveMsg = '', waveId = 0, waveBusy = null;
+
+  const BUCKET = 80, TARGET_SR = 8000, MINSPAN = 0.5, MAX_WAVE_MB = 400;
+  const NATIVE = /\.(mp4|m4v|mov|webm|mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i;
+  const STEPS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
 
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, '0')}`;
   const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
@@ -61,7 +67,6 @@
       res = await fetch(url);
       if (!res.ok) throw new Error('HTTP ' + res.status);
     } catch (e) {
-      // kemungkinan CORS → coba lewat proxy server
       startStatus('Link tidak bisa diakses langsung, mencoba lewat server…');
       res = await fetch('/api/fetch?url=' + encodeURIComponent(url));
       if (!res.ok) {
@@ -93,8 +98,18 @@
   $('urlIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('urlGo').click(); });
 
   /* ---------- LOAD KE EDITOR ---------- */
+  function tick() {
+    if (!media) return;
+    const t = media.currentTime, span = vEnd - vStart;
+    if (stopAt !== null && t >= stopAt) { media.pause(); stopAt = null; }
+    if (!drag && !media.paused && span < dur - 0.01 && (t > vEnd || t < vStart)) setView(t - span * 0.05, t - span * 0.05 + span);
+    else draw();
+    if (!media.paused) raf = requestAnimationFrame(tick);
+  }
+
   function load(f) {
     file = f;
+    waveId++; mono = null; peaks = null; waveMsg = '';
     if (objUrl) URL.revokeObjectURL(objUrl);
     objUrl = URL.createObjectURL(f);
     const isVideo = f.type.startsWith('video') || /\.(mp4|mov|mkv|webm|avi)$/i.test(f.name);
@@ -105,46 +120,271 @@
     $('fname').textContent = `${f.name} — ${mb(f.size)}`;
     $('result').innerHTML = ''; status(''); $('progWrap').classList.add('hidden');
     media.onloadedmetadata = () => {
-      dur = media.duration || 0;
-      [rS, rE].forEach((r) => (r.max = dur));
-      setRange(0, dur);
+      dur = isFinite(media.duration) ? media.duration : 0;
+      if (!dur) { startStatus('Durasi file tidak terbaca.', true); return; }
       $('startCard').classList.add('hidden'); $('editor').classList.remove('hidden');
+      setRange(0, dur); setView(0, dur);
       $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      waveBusy = buildWave(f);
     };
     media.onerror = () => {
       startStatus('Browser tidak bisa memutar file ini (format/codec tidak didukung).', true);
       status('Browser tidak bisa memutar file ini (format/codec tidak didukung).', true);
     };
-    media.ontimeupdate = () => { if (stopAt !== null && media.currentTime >= stopAt) { media.pause(); stopAt = null; } };
+    media.onplay = () => { cancelAnimationFrame(raf); tick(); };
+    media.onpause = media.onended = media.onseeked = media.ontimeupdate = () => { if (media.paused) draw(); };
   }
 
-  /* ---------- RENTANG ---------- */
+  /* ---------- RENTANG PILIHAN ---------- */
   function setRange(s, e) {
     s = Math.max(0, Math.min(s, dur)); e = Math.max(0, Math.min(e, dur));
     if (s > e) [s, e] = [e, s];
-    rS.value = nS.value = s.toFixed(2); rE.value = nE.value = e.toFixed(2);
-    const p = (v) => (dur ? (v / dur) * 100 : 0);
-    sel.style.left = p(s) + '%'; sel.style.width = (p(e) - p(s)) + '%';
-    rE.style.zIndex = 4; rS.style.zIndex = s >= dur / 2 ? 5 : 3;
+    selS = s; selE = e;
+    if (document.activeElement !== nS) nS.value = s.toFixed(2);
+    if (document.activeElement !== nE) nE.value = e.toFixed(2);
     $('info').textContent = `Durasi potongan: ${fmt(e - s)}  (${fmt(s)} → ${fmt(e)})`;
+    draw();
   }
-  const clampS = (v) => Math.min(+v, +rE.value);
-  const clampE = (v) => Math.max(+v, +rS.value);
-  rS.oninput = () => setRange(clampS(rS.value), +rE.value);
-  rE.oninput = () => setRange(+rS.value, clampE(rE.value));
-  nS.oninput = () => setRange(clampS(nS.value || 0), +rE.value);
-  nE.oninput = () => setRange(+rS.value, clampE(nE.value || 0));
-  $('setStart').onclick = () => setRange(clampS(media.currentTime), +rE.value);
-  $('setEnd').onclick = () => setRange(+rS.value, clampE(media.currentTime));
-  $('preview').onclick = () => { media.currentTime = +nS.value; stopAt = +nE.value; media.play(); };
-  $('resetRange').onclick = () => { setRange(0, dur); $('result').innerHTML = ''; status('Rentang dikembalikan ke seluruh durasi.'); };
+  nS.oninput = () => setRange(Math.min(+nS.value || 0, selE), selE);
+  nE.oninput = () => setRange(selS, Math.max(+nE.value || 0, selS));
+  nS.onchange = nE.onchange = () => { nS.value = selS.toFixed(2); nE.value = selE.toFixed(2); };
+  $('setStart').onclick = () => setRange(Math.min(media.currentTime, selE), selE);
+  $('setEnd').onclick = () => setRange(selS, Math.max(media.currentTime, selS));
+  $('preview').onclick = () => { media.currentTime = selS; stopAt = selE; media.play(); };
+  $('resetRange').onclick = () => { setRange(0, dur); setView(0, dur); $('result').innerHTML = ''; status('Rentang dikembalikan ke seluruh durasi.'); };
+
+  /* ---------- VIEW / ZOOM ---------- */
+  const xOf = (t) => ((t - vStart) / (vEnd - vStart)) * wave.clientWidth;
+  const tOf = (x) => vStart + (x / wave.clientWidth) * (vEnd - vStart);
+
+  function setView(vs, ve) {
+    if (!dur) return;
+    const minSpan = Math.min(dur, MINSPAN);
+    const span = Math.max(minSpan, Math.min(dur, ve - vs));
+    vs = Math.max(0, Math.min(vs, dur - span));
+    vStart = vs; vEnd = vs + span;
+    if (dur <= minSpan + 1e-6) {
+      zoomR.disabled = true; pan.disabled = true; zoomR.value = 0; pan.max = 0; pan.value = 0;
+    } else {
+      zoomR.disabled = false;
+      if (document.activeElement !== zoomR) zoomR.value = Math.round((Math.log(span / dur) / Math.log(minSpan / dur)) * 100);
+      pan.max = Math.max(0, dur - span).toFixed(3);
+      if (document.activeElement !== pan) pan.value = vStart;
+      pan.disabled = dur - span < 0.01;
+    }
+    draw();
+  }
+  const zoomBy = (f, ct) => {
+    const span = vEnd - vStart, ns = span * f;
+    if (ct === undefined) ct = (vStart + vEnd) / 2;
+    const ratio = (ct - vStart) / span;
+    setView(ct - ratio * ns, ct - ratio * ns + ns);
+  };
+  zoomR.oninput = () => {
+    const minSpan = Math.min(dur, MINSPAN);
+    const span = dur * Math.pow(minSpan / dur, +zoomR.value / 100), c = (vStart + vEnd) / 2;
+    setView(c - span / 2, c + span / 2);
+  };
+  pan.oninput = () => { const span = vEnd - vStart; setView(+pan.value, +pan.value + span); };
+  $('zIn').onclick = () => zoomBy(0.5);
+  $('zOut').onclick = () => zoomBy(2);
+  $('zAll').onclick = () => setView(0, dur);
+  $('zSel').onclick = () => { const len = Math.max(selE - selS, 0.1), pad = len * 0.1; setView(selS - pad, selE + pad); };
+
+  wave.addEventListener('wheel', (e) => {
+    if (!dur) return;
+    const rect = wave.getBoundingClientRect(), span = vEnd - vStart;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault(); zoomBy(e.deltaY < 0 ? 0.8 : 1.25, tOf(e.clientX - rect.left));
+    } else if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault();
+      const dx = e.deltaX || e.deltaY, d = (dx / rect.width) * span;
+      setView(vStart + d, vEnd + d);
+    }
+  }, { passive: false });
+
+  /* ---------- INTERAKSI KANVAS (seret penanda / klik untuk seek) ---------- */
+  const TOL = 16;
+  function hit(x) {
+    const xs = xOf(selS), xe = xOf(selE);
+    const dS = Math.abs(x - xs), dE = Math.abs(x - xe);
+    if (dS <= TOL && dE <= TOL) return x <= (xs + xe) / 2 ? 'start' : 'end';
+    if (dS <= TOL) return 'start';
+    if (dE <= TOL) return 'end';
+    return null;
+  }
+  function dragTo(x) {
+    const t = Math.max(0, Math.min(dur, tOf(x)));
+    if (drag === 'start') setRange(Math.min(t, selE), selE);
+    else if (drag === 'end') setRange(selS, Math.max(t, selS));
+    else if (drag === 'seek' && media) { media.currentTime = t; draw(); }
+  }
+  wave.addEventListener('pointerdown', (e) => {
+    if (!dur) return;
+    const x = e.clientX - wave.getBoundingClientRect().left;
+    drag = hit(x) || 'seek';
+    wave.setPointerCapture(e.pointerId);
+    dragTo(x);
+  });
+  wave.addEventListener('pointermove', (e) => {
+    const x = e.clientX - wave.getBoundingClientRect().left;
+    if (drag) {
+      dragTo(x);
+      const W = wave.clientWidth, span = vEnd - vStart;
+      if (drag !== 'seek' && span < dur) {
+        if (x < 20) setView(vStart - span * 0.02, vEnd - span * 0.02);
+        else if (x > W - 20) setView(vStart + span * 0.02, vEnd + span * 0.02);
+      }
+    } else if (dur) wave.style.cursor = hit(x) ? 'ew-resize' : 'pointer';
+  });
+  const endDrag = () => { drag = null; };
+  wave.addEventListener('pointerup', endDrag);
+  wave.addEventListener('pointercancel', endDrag);
+
+  /* ---------- GAMBAR WAVEFORM ---------- */
+  function draw() {
+    const W = wave.clientWidth, H = wave.clientHeight;
+    if (!W || !H) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (wave.width !== Math.round(W * dpr) || wave.height !== Math.round(H * dpr)) {
+      wave.width = Math.round(W * dpr); wave.height = Math.round(H * dpr);
+    }
+    const g = wave.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    if (!dur || vEnd <= vStart) return;
+    const RULER = 20, mid = RULER + (H - RULER) / 2, amp = (H - RULER) / 2 - 4, span = vEnd - vStart;
+
+    // ruler
+    const pps = W / span;
+    const step = STEPS.find((s) => s * pps >= 80) || 3600;
+    g.font = '11px system-ui,sans-serif'; g.textBaseline = 'top';
+    g.fillStyle = 'rgba(154,140,184,.9)';
+    for (let i = Math.ceil(vStart / step); i * step <= vEnd; i++) {
+      const t = i * step, x = Math.round(xOf(t));
+      g.fillRect(x, 0, 1, 6);
+      const m = Math.floor(t / 60), s = t % 60;
+      g.fillText(step < 1 ? `${m}:${s.toFixed(2).padStart(5, '0')}` : `${m}:${String(Math.floor(s)).padStart(2, '0')}`, x + 3, 5);
+    }
+    g.fillStyle = 'rgba(139,92,246,.18)'; g.fillRect(0, mid, W, 1);
+
+    // waveform
+    if (peaks && mono) {
+      const n = mono.length, gain = peaks.gain, nb = peaks.min.length;
+      for (let x = 0; x < W; x++) {
+        const t0 = vStart + (x / W) * span, t1 = vStart + ((x + 1) / W) * span;
+        const s0 = Math.floor(t0 * wsr);
+        if (s0 >= n) break;
+        const s1 = Math.max(s0 + 1, Math.ceil(t1 * wsr));
+        let mn = 1, mx = -1;
+        if (s1 - s0 > BUCKET * 2) {
+          const b0 = Math.floor(s0 / BUCKET), b1 = Math.min(nb, Math.ceil(s1 / BUCKET));
+          for (let b = b0; b < b1; b++) { if (peaks.min[b] < mn) mn = peaks.min[b]; if (peaks.max[b] > mx) mx = peaks.max[b]; }
+        } else {
+          const e = Math.min(s1, n);
+          for (let i = s0; i < e; i++) { const v = mono[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+        }
+        if (mx < mn) continue;
+        const inSel = t1 >= selS && t0 <= selE;
+        g.fillStyle = inSel ? '#c084fc' : 'rgba(154,140,184,.45)';
+        const y1 = mid - Math.min(1, mx * gain) * amp, y2 = mid - Math.max(-1, mn * gain) * amp;
+        g.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+      }
+    } else if (waveMsg) {
+      g.fillStyle = 'rgba(154,140,184,.9)'; g.font = '13px system-ui,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(waveMsg, W / 2, mid - 14); g.textAlign = 'start';
+    }
+
+    // area di luar pilihan diredupkan
+    const xs = xOf(selS), xe = xOf(selE);
+    g.fillStyle = 'rgba(7,4,13,.55)';
+    if (xs > 0) g.fillRect(0, RULER, Math.min(W, xs), H - RULER);
+    if (xe < W) g.fillRect(Math.max(0, xe), RULER, W - Math.max(0, xe), H - RULER);
+
+    // penanda awal/akhir
+    const handle = (x, color) => {
+      if (x < -2 || x > W + 2) return;
+      g.fillStyle = color; g.fillRect(x - 1, RULER, 2, H - RULER);
+      const gy = mid - 15; g.fillRect(x - 6, gy, 12, 30);
+      g.fillStyle = '#1b1130'; g.fillRect(x - 2, gy + 8, 1, 14); g.fillRect(x + 1, gy + 8, 1, 14);
+    };
+    handle(xs, '#ffffff'); handle(xe, '#a78bfa');
+
+    // playhead
+    if (media) {
+      const t = media.currentTime;
+      if (t >= vStart && t <= vEnd) {
+        const x = xOf(t);
+        g.fillStyle = '#f472b6'; g.fillRect(x - 1, RULER, 2, H - RULER);
+        g.beginPath(); g.moveTo(x - 5, RULER); g.lineTo(x + 5, RULER); g.lineTo(x, RULER + 7); g.closePath(); g.fill();
+      }
+    }
+  }
+  window.addEventListener('resize', draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(wave);
+
+  /* ---------- ANALISIS AUDIO -> WAVEFORM ---------- */
+  async function decodeViaFFmpeg(f, ctx) {
+    const inst = await getFF();
+    const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
+    const inName = 'wave_in.' + ext;
+    await inst.writeFile(inName, new Uint8Array(await f.arrayBuffer()));
+    const code = await inst.exec(['-i', inName, '-vn', '-ac', '1', '-ar', String(TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']);
+    await inst.deleteFile(inName).catch(() => {});
+    if (code !== 0) throw new Error('tidak ada audio');
+    const data = await inst.readFile('wave.wav');
+    await inst.deleteFile('wave.wav').catch(() => {});
+    return ctx.decodeAudioData(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+  }
+
+  async function buildWave(f) {
+    const id = ++waveId;
+    peaks = null; mono = null;
+    if (f.size > MAX_WAVE_MB * 1048576) { waveMsg = 'File besar — waveform dinonaktifkan agar tidak kehabisan memori (pemotongan tetap bisa).'; draw(); return; }
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) { waveMsg = 'Browser tidak mendukung waveform.'; draw(); return; }
+    waveMsg = 'Menganalisis audio…'; draw();
+    let ctx;
+    try {
+      ctx = new Ctx({ sampleRate: TARGET_SR });
+      let buf;
+      try { buf = await ctx.decodeAudioData(await f.arrayBuffer()); }
+      catch (e) {
+        if (NATIVE.test(f.name)) throw e;
+        waveMsg = 'Menganalisis audio lewat mesin ffmpeg…'; draw();
+        buf = await decodeViaFFmpeg(f, ctx);
+      }
+      if (id !== waveId) return;
+      const n = buf.length, chn = buf.numberOfChannels, m = new Float32Array(n);
+      m.set(buf.getChannelData(0));
+      for (let c = 1; c < chn; c++) { const d = buf.getChannelData(c); for (let i = 0; i < n; i++) m[i] += d[i]; }
+      if (chn > 1) for (let i = 0; i < n; i++) m[i] /= chn;
+      const nb = Math.ceil(n / BUCKET), pmin = new Float32Array(nb), pmax = new Float32Array(nb);
+      let top = 0;
+      for (let b = 0; b < nb; b++) {
+        let mn = 1, mx = -1; const e = Math.min(n, (b + 1) * BUCKET);
+        for (let i = b * BUCKET; i < e; i++) { const v = m[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+        pmin[b] = mn; pmax[b] = mx;
+        const a = Math.max(Math.abs(mn), Math.abs(mx)); if (a > top) top = a;
+      }
+      wsr = buf.sampleRate; mono = m;
+      peaks = { min: pmin, max: pmax, gain: top > 0.001 ? Math.min(0.95 / top, 30) : 1 };
+      waveMsg = '';
+    } catch (e) {
+      if (id === waveId) waveMsg = 'Waveform tidak tersedia (tanpa audio / format tidak terbaca). Pemotongan tetap bisa.';
+    } finally {
+      if (ctx && ctx.close) ctx.close().catch(() => {});
+      if (id === waveId) draw();
+    }
+  }
 
   /* ---------- RESET / GANTI FILE ---------- */
   function resetAll() {
+    waveId++; cancelAnimationFrame(raf);
     if (ff) { try { ff.terminate(); } catch (_) {} ff = null; }
-    if (media) { media.pause(); }
+    if (media) media.pause();
     if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
-    file = null; media = null; dur = 0; resultBlob = null; stopAt = null;
+    file = null; media = null; dur = 0; resultBlob = null; stopAt = null; mono = null; peaks = null; waveMsg = ''; waveBusy = null;
     $('playerBox').innerHTML = ''; $('result').innerHTML = ''; status(''); startStatus('');
     $('progWrap').classList.add('hidden'); $('prog').style.width = '0';
     $('cut').disabled = false; $('cut').classList.remove('hidden'); $('cancel').classList.add('hidden');
@@ -181,12 +421,14 @@
 
   /* ---------- POTONG ---------- */
   $('cut').onclick = async () => {
-    const s = +nS.value, e = +nE.value, d = e - s;
+    const s = selS, e = selE, d = e - s;
     if (d <= 0) return status('Rentang potongan tidak valid.', true);
     cancelled = false;
     $('cut').classList.add('hidden'); $('cancel').classList.remove('hidden');
     $('result').innerHTML = ''; $('prog').style.width = '0'; $('progWrap').classList.remove('hidden');
     try {
+      if (waveBusy) { status('Menunggu analisis audio selesai…'); await waveBusy.catch(() => {}); }
+      if (cancelled) return;
       const f = await getFF();
       const isVideo = media.tagName === 'VIDEO';
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
@@ -225,7 +467,7 @@
       $('result').append(pv, acts);
       $('prog').style.width = '100%'; status('Selesai ✔');
     } catch (err) {
-      if (cancelled) { status('Proses dibatalkan.'); }
+      if (cancelled) status('Proses dibatalkan.');
       else { console.error(err); status('Error: ' + (err.message || err), true); }
     } finally {
       $('cut').classList.remove('hidden'); $('cancel').classList.add('hidden');
