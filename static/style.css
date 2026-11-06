@@ -260,3 +260,22 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .av-fill{position:absolute;left:0;top:0;display:block;white-space:nowrap;clip-path:inset(0 100% 0 0);
   background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 16px rgba(139,92,246,.45))}
+
+/* PRELOADER ANALISIS FILE BESAR (di atas area waveform) */
+.wavebox{position:relative}
+.big-loader{position:absolute;left:0;right:0;top:0;height:150px;z-index:2;display:none;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  padding:10px 16px;text-align:center;border-radius:12px;border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--card2),var(--card));box-shadow:0 10px 30px var(--shadow)}
+.big-loader.on{display:flex}
+@media (max-width:520px){.big-loader{height:125px}}
+.bl-eq{display:flex;align-items:flex-end;gap:4px;height:26px}
+.bl-eq i{display:block;width:5px;height:6px;border-radius:3px;background:linear-gradient(180deg,var(--acc2),var(--acc));animation:blEq 1s ease-in-out infinite}
+.bl-eq i:nth-child(2){animation-delay:-.8s}.bl-eq i:nth-child(3){animation-delay:-.6s}.bl-eq i:nth-child(4){animation-delay:-.4s}.bl-eq i:nth-child(5){animation-delay:-.2s}
+@keyframes blEq{0%,100%{height:6px}50%{height:26px}}
+.bl-title{font-weight:700;font-size:15px}
+.bl-sub{font-size:12px;color:var(--mut)}
+.bl-bar{width:min(320px,80%);height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bl-bar span{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .4s ease}
+.bl-bar.indet span{width:35%;animation:blSlide 1.3s ease-in-out infinite}
+@keyframes blSlide{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
+@media (prefers-reduced-motion:reduce){.bl-eq i,.bl-bar.indet span{animation:none}}
