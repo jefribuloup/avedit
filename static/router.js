@@ -28,8 +28,62 @@
   }
   var currentKey = keyOf(window.location.href);
 
+  /* ---- preloader tengah layar: teks brand terisi warna sesuai proses ---- */
+  var loaderEl = null, fillEl = null, showTimer = 0, hideTimer = 0, shownAt = 0;
+  var SHOW_DELAY = 120, MIN_VISIBLE = 450; // ms: tidak berkedip untuk navigasi sangat cepat
+  function ensureLoader() {
+    if (loaderEl && loaderEl.isConnected) return;
+    var b = document.querySelector('.brand span');
+    var name = (b && b.textContent.trim()) || 'AVEditor';
+    loaderEl = document.createElement('div');
+    loaderEl.id = 'avLoader';
+    loaderEl.className = 'av-loader';
+    loaderEl.setAttribute('role', 'status');
+    loaderEl.setAttribute('aria-live', 'polite');
+    var word = document.createElement('div');
+    word.className = 'av-word';
+    word.setAttribute('aria-hidden', 'true');
+    var base = document.createElement('span'); base.className = 'av-base'; base.textContent = name;
+    fillEl = document.createElement('span'); fillEl.className = 'av-fill'; fillEl.textContent = name;
+    word.appendChild(base); word.appendChild(fillEl);
+    loaderEl.appendChild(word);
+    document.documentElement.appendChild(loaderEl); // di luar <body> agar tidak ikut terbuang saat ganti halaman
+  }
+  function fillTo(pct, ms, ease) {
+    fillEl.style.transition = ms ? 'clip-path ' + ms + 'ms ' + ease : 'none';
+    fillEl.style.clipPath = 'inset(0 ' + (100 - pct) + '% 0 0)';
+  }
+  function loader(action) {
+    ensureLoader();
+    clearTimeout(showTimer); clearTimeout(hideTimer);
+    var on = loaderEl.classList.contains('on');
+    if (action === 'start') {
+      var go = function () {
+        shownAt = Date.now();
+        loaderEl.setAttribute('aria-label', window.I18N ? window.I18N.t('loading') : 'Loading…');
+        loaderEl.classList.add('on');
+        document.documentElement.setAttribute('aria-busy', 'true');
+        fillTo(0, 0); void fillEl.offsetWidth;
+        fillTo(85, 8000, 'cubic-bezier(.1,.7,.2,1)');
+      };
+      if (on) go(); else showTimer = setTimeout(go, SHOW_DELAY);
+    } else if (action === 'done') {
+      if (!on) return; // selesai sebelum sempat tampil
+      fillTo(100, 250, 'ease-out');
+      hideTimer = setTimeout(function () {
+        loaderEl.classList.remove('on');
+        document.documentElement.removeAttribute('aria-busy');
+      }, Math.max(300, MIN_VISIBLE - (Date.now() - shownAt)));
+    } else { // reset (mis. kembali dari bfcache)
+      loaderEl.classList.remove('on');
+      document.documentElement.removeAttribute('aria-busy');
+      fillTo(0, 0);
+    }
+  }
+
   /* ---- progress bar tipis di bawah navbar ---- */
   function progress(action) {
+    loader(action === 'start' ? 'start' : 'done');
     var el = document.querySelector('#navProgress span');
     if (!el) return;
     var host = el.parentNode;
@@ -208,7 +262,14 @@
     if (e.defaultPrevented) return;
     var a = e.target.closest ? e.target.closest('a') : null;
     var u = eligible(a, e);
-    if (!u) return;
+    if (!u) {
+      try {
+        if (a && a.href && !(e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) &&
+            (!a.target || a.target === '_self') && !a.hasAttribute('download') &&
+            new URL(a.href, window.location.href).pathname.indexOf('/auth/') === 0) loader('start');
+      } catch (err) { /* abaikan */ }
+      return;
+    }
     var same = u.pathname === window.location.pathname && u.search === window.location.search;
     if (same && u.hash) return; // anchor di halaman yang sama: biarkan browser
     e.preventDefault();
@@ -219,6 +280,8 @@
     }
     navigate(u.href, true);
   });
+
+  window.addEventListener('pageshow', function (e) { if (e.persisted) loader('reset'); });
 
   // Tombol Back/Forward browser
   window.addEventListener('popstate', function () {
