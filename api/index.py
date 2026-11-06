@@ -1,6 +1,7 @@
 import ipaddress
 import os
 import socket
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -8,7 +9,11 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, Response
 
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from lib import auth  # noqa: E402
+
 app = Flask(__name__)
+app.secret_key = auth.load_secret_key()
 
 INDEX_HTML = r"""<!DOCTYPE html>
 <html lang="id">
@@ -34,6 +39,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <button type="button" id="langBtn" class="btn-ico" aria-label="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg><span id="langLbl">EN</span></button>
       <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sun"/></svg></button>
       <button type="button" id="navNew" class="btn-sm"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#plus"/></svg><span data-i18n="nav.new">Mulai Baru</span></button>
+      <div class="authbox" id="authBox"></div>
     </div>
   </div>
 </nav>
@@ -168,11 +174,16 @@ INDEX_HTML = r"""<!DOCTYPE html>
 </footer>
 
 <script src="/static/i18n.js"></script>
+<script src="/static/authnav.js"></script>
 <script src="/static/ffmpeg/ffmpeg.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>
 """
+
+
+# Login & daftar: /login, /daftar, /auth/*, /api/me (lihat lib/auth.py)
+auth.register_routes(app, INDEX_HTML)
 
 
 @app.get("/")
