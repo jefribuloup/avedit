@@ -15,6 +15,7 @@ Environment variable:
 import os
 import re
 import secrets
+from datetime import datetime, timezone
 from urllib.parse import urlencode, urlparse
 
 import requests
@@ -169,7 +170,11 @@ def register_routes(app, index_html):
     )
     boot = re.search(r"<script>.*?</script>", index_html, re.S)
     brand = re.search(r'<a class="brand".*?</a>', index_html, re.S)
+    nav = re.search(r'<nav class="nav".*?</nav>', index_html, re.S)
+    foot = re.search(r'<footer class="footer".*?</footer>', index_html, re.S)
     ctx = {
+        "nav": nav.group(0) if nav else "",
+        "footer": foot.group(0) if foot else "",
         "theme_boot": boot.group(0) if boot else "",
         "brand": brand.group(0) if brand else '<a class="brand" href="/"><span>AVEdit</span></a>',
     }
@@ -185,8 +190,9 @@ def register_routes(app, index_html):
         nxt = _safe_next(request.args.get("next"))
         if current_user():
             return redirect(nxt)
+        page_ctx = dict(ctx, footer=ctx["footer"].replace("{{YEAR}}", str(datetime.now(timezone.utc).year)))
         return render_template_string(AUTH_HTML, mode=mode, next_url=nxt, csrf_token=_csrf_token(),
-                                      google_client_id=_client_id(), **ctx)
+                                      google_client_id=_client_id(), **page_ctx)
 
     @app.get("/login")
     def login_page():
