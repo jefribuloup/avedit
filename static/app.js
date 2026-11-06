@@ -340,6 +340,39 @@
   }
 
   /* ---------- ANALISIS AUDIO -> WAVEFORM ---------- */
+  /* Preloader khusus analisis file besar: tampil di atas area waveform (equalizer + bar + waktu berjalan). */
+  let bigUI = null, bigTimer = 0, bigProg = null;
+  function bigLoader(on) {
+    const box = document.querySelector('.wavebox');
+    clearInterval(bigTimer); bigProg = null;
+    if (!box) return;
+    if (!bigUI || !bigUI.isConnected) {
+      bigUI = document.createElement('div');
+      bigUI.id = 'bigLoader'; bigUI.className = 'big-loader';
+      bigUI.setAttribute('role', 'status'); bigUI.setAttribute('aria-live', 'polite');
+      bigUI.innerHTML = '<div class="bl-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>' +
+        '<div class="bl-title"></div><div class="bl-sub"></div><div class="bl-bar indet"><span></span></div>';
+      box.appendChild(bigUI);
+    }
+    if (!on) { bigUI.classList.remove('on'); return; }
+    const title = bigUI.querySelector('.bl-title'), sub = bigUI.querySelector('.bl-sub');
+    const bar = bigUI.querySelector('.bl-bar'), fill = bar.firstChild, t0 = Date.now();
+    title.textContent = tr('bl.title') + '…';
+    bar.classList.add('indet'); fill.style.width = '';
+    const tick = () => {
+      const sec = Math.floor((Date.now() - t0) / 1000), p2 = (n) => String(n).padStart(2, '0');
+      sub.textContent = tr('bl.sub') + ' · ' + p2(Math.floor(sec / 60)) + ':' + p2(sec % 60);
+    };
+    tick(); bigTimer = setInterval(tick, 1000);
+    bigProg = (p) => {
+      if (!(p > 0 && p <= 1)) return;
+      bar.classList.remove('indet'); fill.style.width = (p * 100).toFixed(0) + '%';
+      title.textContent = tr('bl.title') + ' — ' + (p * 100).toFixed(0) + '%';
+    };
+    bigUI.classList.add('on');
+  }
+  window.addEventListener('avedit:pageleave', () => { clearInterval(bigTimer); bigProg = null; }, { once: true });
+
   /* Worker (thread terpisah) untuk menghitung puncak waveform file besar agar UI tidak membeku. */
   function peakWorker() {
     self.onmessage = (e) => {
@@ -421,6 +454,7 @@
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) { waveMsg = tr('w.unsupported'); draw(); return; }
     waveMsg = tr(big ? 'w.analyzingBig' : 'w.analyzing'); draw();
+    if (big) bigLoader(true);
     let ctx;
     try {
       ctx = new Ctx({ sampleRate: TARGET_SR });
@@ -462,13 +496,13 @@
       if (id === waveId) waveMsg = tr('w.naWhy', { why: String((e && e.message) || e).replace(/\s+/g, ' ').slice(0, 140) });
     } finally {
       if (ctx && ctx.close) ctx.close().catch(() => {});
-      if (id === waveId) draw();
+      if (id === waveId) { if (big) bigLoader(false); draw(); }
     }
   }
 
   /* ---------- RESET / GANTI FILE ---------- */
   function resetAll() {
-    waveId++; cancelAnimationFrame(raf);
+    waveId++; bigLoader(false); cancelAnimationFrame(raf);
     if (ff) { try { ff.terminate(); } catch (_) {} ff = null; window.__avFF = null; }
     if (media) media.pause();
     if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
@@ -491,7 +525,7 @@
     if (ff) return ff;
     status(tr('st.loadEngine'));
     const inst = new FFmpegWASM.FFmpeg();
-    inst.on('progress', ({ progress }) => { $('prog').style.width = Math.max(0, Math.min(100, progress * 100)) + '%'; });
+    inst.on('progress', ({ progress }) => { $('prog').style.width = Math.max(0, Math.min(100, progress * 100)) + '%'; if (bigProg) bigProg(progress); });
     const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
     const blobURL = async (url, type) => {
       const r = await fetch(url);
