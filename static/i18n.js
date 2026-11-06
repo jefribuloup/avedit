@@ -4,7 +4,7 @@
     id: {
       'title': 'AVEdit — Audio & Video Editor',
       'nav.guide': 'Panduan', 'nav.new': 'Mulai Baru',
-      'hero.title': 'Potong <span class="grad">Audio &amp; Video</span>',
+      'hero.title': '<span class="grad">Audio &amp; Video</span> Editor',
       'hero.sub': 'Pilih bagian yang kamu mau, potong, lalu unduh. Simpel dan cepat.',
       'tab.local': 'File Lokal', 'tab.link': 'Dari Link',
       'drop.main': '<strong>Klik atau seret file</strong> audio / video ke sini',
@@ -50,7 +50,7 @@
     en: {
       'title': 'AVEdit — Audio & Video Editor',
       'nav.guide': 'Guide', 'nav.new': 'Start New',
-      'hero.title': 'Cut <span class="grad">Audio &amp; Video</span>',
+      'hero.title': '<span class="grad">Audio &amp; Video</span> Editor',
       'hero.sub': 'Pick the part you want, cut it, then download. Simple and fast.',
       'tab.local': 'Local File', 'tab.link': 'From Link',
       'drop.main': '<strong>Click or drag a file</strong> (audio / video) here',
