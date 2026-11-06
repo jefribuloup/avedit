@@ -220,3 +220,27 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .gsi-wrap{display:flex;justify-content:center;min-height:44px}
 .btn-google{display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#1f1f1f;text-decoration:none;font-weight:600}
 .btn-google[hidden],.login-error[hidden],.login-error-link[hidden],.gsi-wrap[hidden]{display:none}
+
+/* AKUN: responsif (mobile -> tablet -> desktop) */
+.login-main{min-width:0}
+.login-side{display:none}
+.side-badge{display:inline-flex;align-items:center;gap:8px;font-size:15px;color:var(--acc2)}
+.side-badge .ic{width:22px;height:22px}
+.login-side h2{margin:0;font-size:clamp(24px,2.6vw,30px);line-height:1.2}
+.login-side p{margin:0;color:var(--mut)}
+.side-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:14px}
+.side-list li{display:flex;align-items:flex-start;gap:12px}
+.side-list .ic{flex:none;width:36px;height:36px;padding:8px;border-radius:10px;background:rgba(139,92,246,.16);color:var(--acc2);margin-top:-2px}
+@media (min-width:640px){
+  .login-card{max-width:620px}
+  #formRegister{grid-template-columns:1fr 1fr;gap:14px 16px;align-items:start}
+  #formRegister .login-submit{grid-column:2;align-self:end;margin-top:0}
+}
+@media (min-width:1024px){
+  .login-wrap{padding-block:clamp(28px,6vh,64px)}
+  .login-card{max-width:960px;display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);padding:0;overflow:hidden}
+  .login-side{display:flex;flex-direction:column;justify-content:center;gap:16px;padding:44px 36px;border-right:1px solid var(--line);
+    background:linear-gradient(160deg,rgba(139,92,246,.28),rgba(109,40,217,.06) 65%,transparent),var(--card2)}
+  .login-main{padding:40px 44px}
+  #formLogin{max-width:460px}
+}
