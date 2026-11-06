@@ -29,19 +29,25 @@ INDEX_HTML = r"""<!DOCTYPE html>
 </head>
 <body>
 
-<nav class="nav">
+<nav class="nav" id="nav">
   <div class="nav-in">
     <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEditor</span></a>
-    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#menu"/></svg></button>
-    <div class="links" id="links">
-      <a href="#editor-sec">Editor</a>
-      <a href="#panduan" data-i18n="nav.guide">Panduan</a>
-      <button type="button" id="langBtn" class="btn-ico" aria-label="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg><span id="langLbl">EN</span></button>
-      <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sun"/></svg></button>
-      <button type="button" id="navNew" class="btn-sm"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#plus"/></svg><span data-i18n="nav.new">Mulai Baru</span></button>
+
+    <div class="menu" id="menu">
+      <div class="menu-links">
+        <a class="nav-link" href="/" data-nav="editor">Editor</a>
+        <a class="nav-link" href="/#panduan" data-nav="guide" data-i18n="nav.guide">Panduan</a>
+      </div>
       <div class="authbox" id="authBox"></div>
     </div>
+
+    <div class="nav-tools">
+      <button type="button" id="langBtn" class="btn-ico" aria-label="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg><span id="langLbl">EN</span></button>
+      <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sun"/></svg></button>
+      <button type="button" id="burger" class="btn-ico burger" aria-label="Menu" aria-expanded="false" aria-controls="menu"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#menu"/></svg></button>
+    </div>
   </div>
+  <div class="nav-progress" id="navProgress" aria-hidden="true"><span></span></div>
 </nav>
 
 <main class="wrap">
@@ -154,8 +160,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <div class="f-col">
       <h3 data-i18n="foot.menu">Menu</h3>
       <ul>
-        <li><a href="#editor-sec">Editor</a></li>
-        <li><a href="#panduan" data-i18n="nav.guide">Panduan</a></li>
+        <li><a href="/">Editor</a></li>
+        <li><a href="/#panduan" data-i18n="nav.guide">Panduan</a></li>
         <li><a href="/api/health" data-i18n="foot.status">Status layanan</a></li>
       </ul>
     </div>
@@ -175,6 +181,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <script src="/static/i18n.js"></script>
 <script src="/static/authnav.js"></script>
+<script src="/static/router.js"></script>
 <script src="/static/ffmpeg/ffmpeg.js"></script>
 <script src="/static/app.js"></script>
 </body>
