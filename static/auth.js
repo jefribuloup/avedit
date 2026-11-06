@@ -106,19 +106,36 @@
   function startGoogle() {
     if (!gid()) return;
     clearTimeout(loadTimer);
-    gid().initialize({
-      client_id: clientId, callback: onCredential, auto_select: false, cancel_on_tap_outside: false,
-      itp_support: true, use_fedcm_for_prompt: true, context: mode === 'register' ? 'signup' : 'signin',
-    });
+    // Callback selalu diarahkan ke handler halaman yang sedang aktif (Masuk / Daftar).
+    window.__avGsiHandler = onCredential;
+    // initialize() hanya dipanggil ulang bila client/mode berubah (Google memperingatkan bila terlalu sering).
+    const key = clientId + '|' + mode;
+    if (window.__avGsiKey !== key) {
+      gid().initialize({
+        client_id: clientId,
+        callback: (resp) => { if (window.__avGsiHandler) window.__avGsiHandler(resp); },
+        auto_select: false, cancel_on_tap_outside: false,
+        itp_support: true, use_fedcm_for_prompt: true, context: mode === 'register' ? 'signup' : 'signin',
+      });
+      window.__avGsiKey = key;
+    }
+    // Tombol resmi Google (cadangan bila One Tap ditutup / sedang dalam masa tunggu)
     gid().renderButton(btnBox, {
       type: 'standard', theme: 'outline', size: 'large', shape: 'pill',
       text: mode === 'register' ? 'signup_with' : 'signin_with', logo_alignment: 'left',
       width: Math.min(320, Math.max(200, btnBox.clientWidth || 280)), locale: window.I18N.getLang(),
     });
+    // One Tap: popup akun Google muncul otomatis di halaman Masuk maupun Daftar
+    try { gid().prompt(); } catch (_) {}
   }
   function useFallback() { if (gid()) return; btnBox.hidden = true; fallback.hidden = false; }
 
   if (!clientId) { btnBox.hidden = true; $('googleFallback').hidden = true; document.querySelector('.login-divider').hidden = true; return; }
+  // Pindah halaman tanpa reload (Masuk <-> Daftar): tutup popup One Tap halaman ini
+  window.addEventListener('avedit:pageleave', () => {
+    window.__avGsiHandler = null;
+    try { if (gid()) gid().cancel(); } catch (_) {}
+  }, { once: true });
   if (gid()) { startGoogle(); return; }
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.defer = true;
