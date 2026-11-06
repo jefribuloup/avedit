@@ -36,6 +36,17 @@ AUTH_HTML = """<!DOCTYPE html>
 
 <main class="login-wrap">
   <section class="login-card" id="loginCard" data-next="{{ next_url }}" data-csrf="{{ csrf_token }}" data-client-id="{{ google_client_id }}" data-mode="{{ mode }}">
+    <aside class="login-side" aria-hidden="true">
+      <span class="side-badge">""" + _ic("audio-lines") + """<b>AVEdit</b></span>
+      <h2 data-i18n="auth.side.title">Potong audio &amp; video tanpa ribet</h2>
+      <p data-i18n="auth.side.sub">Akun gratis untuk memakai AVEdit dari perangkat mana saja.</p>
+      <ul class="side-list">
+        <li>""" + _ic("scissors") + """<span data-i18n="auth.side.f1">Pilih bagian, potong, unduh — cepat</span></li>
+        <li>""" + _ic("audio-lines") + """<span data-i18n="auth.side.f2">Waveform, zoom, dan ketelitian hingga detik</span></li>
+        <li>""" + _ic("cloud-upload") + """<span data-i18n="auth.side.f3">File diproses langsung di browser Anda</span></li>
+      </ul>
+    </aside>
+    <div class="login-main">
     <div class="login-tabs" role="tablist">
       <a class="login-tab{% if mode != 'register' %} active{% endif %}" href="/login{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.login">Masuk</a>
       <a class="login-tab{% if mode == 'register' %} active{% endif %}" href="/daftar{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.register">Daftar</a>
@@ -82,6 +93,7 @@ AUTH_HTML = """<!DOCTYPE html>
       """ + GOOGLE_SVG + """
       <span data-i18n="auth.google.{{ mode }}">{{ 'Daftar dengan Google' if mode == 'register' else 'Masuk dengan Google' }}</span>
     </a>
+    </div>
   </section>
 </main>
 
