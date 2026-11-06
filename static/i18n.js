@@ -5,7 +5,7 @@
       'title': 'AVEdit — Audio & Video Editor',
       'nav.guide': 'Panduan', 'nav.new': 'Mulai Baru',
       'hero.title': '<span class="grad">Audio &amp; Video</span> Editor',
-      'hero.sub': 'Pilih bagian yang kamu mau, potong, lalu unduh. Simpel dan cepat.',
+      'hero.sub': 'Pilih bagian yang kamu mau, potong, lalu unduh. Simpel dan cepat bro.',
       'tab.local': 'File Lokal', 'tab.link': 'Dari Link',
       'drop.main': '<strong>Klik atau seret file</strong> audio / video ke sini',
       'drop.sub': 'MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG — disarankan &lt; 500 MB',
