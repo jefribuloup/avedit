@@ -256,7 +256,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   box-shadow:0 24px 60px var(--shadow),0 8px 20px var(--shadow),0 0 48px rgba(139,92,246,.18);transform:scale(.96);transition:transform .25s ease}
 .av-loader.on .av-box{transform:scale(1)}
 .av-word{position:relative;display:inline-block;font-weight:700;font-size:clamp(34px,9vw,68px);letter-spacing:.01em;line-height:1.15;user-select:none}
-.av-base{display:block;color:var(--txt);opacity:.14}
+.av-base{display:block;color:#fff;opacity:1}
+:root[data-theme="light"] .av-base{text-shadow:0 0 1px rgba(60,40,100,.6),0 1px 4px rgba(60,40,100,.35)}
 .av-fill{position:absolute;left:0;top:0;display:block;white-space:nowrap;clip-path:inset(0 100% 0 0);
   background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 16px rgba(139,92,246,.45))}
