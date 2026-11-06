@@ -16,7 +16,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0612">
-<title>AVEditor — Potong Audio & Video</title>
+<title>AVEditor — Audio & Video Editor</title>
 <script>
 (function(){try{var m=localStorage.getItem("AVEditor-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
 </script>
