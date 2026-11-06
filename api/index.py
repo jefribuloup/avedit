@@ -26,14 +26,14 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="/"><span>AVEdit</span></a>
-    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">☰</button>
+    <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEdit</span></a>
+    <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#menu"/></svg></button>
     <div class="links" id="links">
       <a href="#editor-sec">Editor</a>
       <a href="#panduan" data-i18n="nav.guide">Panduan</a>
-      <button type="button" id="langBtn" class="btn-ico" aria-label="Language">🌐 EN</button>
-      <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme">☀️</button>
-      <button type="button" id="navNew" class="btn-sm" data-i18n="nav.new">＋ Mulai Baru</button>
+      <button type="button" id="langBtn" class="btn-ico" aria-label="Language"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#globe"/></svg><span id="langLbl">EN</span></button>
+      <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#sun"/></svg></button>
+      <button type="button" id="navNew" class="btn-sm"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#plus"/></svg><span data-i18n="nav.new">Mulai Baru</span></button>
     </div>
   </div>
 </nav>
@@ -48,13 +48,14 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <!-- LAYAR AWAL -->
     <div id="startCard">
       <div class="tabs" role="tablist">
-        <button type="button" class="tab active" data-tab="local" data-i18n="tab.local">📁 File Lokal</button>
-        <button type="button" class="tab" data-tab="link" data-i18n="tab.link">🔗 Dari Link</button>
+        <button type="button" class="tab active" data-tab="local"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#folder-open"/></svg><span data-i18n="tab.local">File Lokal</span></button>
+        <button type="button" class="tab" data-tab="link"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#link"/></svg><span data-i18n="tab.link">Dari Link</span></button>
       </div>
 
       <div id="paneLocal" class="pane">
         <input type="file" id="file" accept="audio/*,video/*" hidden>
         <div id="drop" class="drop">
+          <svg class="ic ic-xl" aria-hidden="true"><use href="/static/icons.svg#cloud-upload"/></svg>
           <p data-i18n-html="drop.main"><strong>Klik atau seret file</strong> audio / video ke sini</p>
           <small data-i18n-html="drop.sub">MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG — disarankan &lt; 500 MB</small>
         </div>
@@ -78,11 +79,11 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <div class="wavebox">
         <canvas id="wave"></canvas>
         <div class="wtools">
-          <button type="button" id="zOut" title="Zoom out">−</button>
+          <button type="button" id="zOut" title="Zoom out" aria-label="Zoom out"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#zoom-out"/></svg></button>
           <input type="range" id="zoom" min="0" max="100" step="1" value="0" aria-label="Zoom">
-          <button type="button" id="zIn" title="Zoom in">＋</button>
-          <button type="button" id="zSel" class="ghost" data-i18n="z.sel">🔍 Zoom ke pilihan</button>
-          <button type="button" id="zAll" class="ghost" data-i18n="z.all">Lihat semua</button>
+          <button type="button" id="zIn" title="Zoom in" aria-label="Zoom in"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#zoom-in"/></svg></button>
+          <button type="button" id="zSel" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#search"/></svg><span data-i18n="z.sel">Zoom ke pilihan</span></button>
+          <button type="button" id="zAll" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#maximize"/></svg><span data-i18n="z.all">Lihat semua</span></button>
         </div>
         <input type="range" id="pan" class="pan" min="0" max="0" step="0.01" value="0" aria-label="Geser tampilan">
         <small class="hint" data-i18n="hint.wave">Seret penanda putih (awal) dan ungu (akhir) untuk memilih bagian. Klik gelombang untuk pindah posisi putar. Desktop: Ctrl + scroll = zoom, Shift + scroll = geser.</small>
@@ -92,13 +93,13 @@ INDEX_HTML = r"""<!DOCTYPE html>
         <label><span data-i18n="l.start">Mulai (detik)</span>
           <div class="row">
             <input type="number" id="nStart" min="0" step="0.01" value="0" inputmode="decimal">
-            <button type="button" id="setStart" title="Pakai posisi player" data-i18n-title="ttl.pos">📍</button>
+            <button type="button" id="setStart" title="Pakai posisi player" data-i18n-title="ttl.pos"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map-pin"/></svg></button>
           </div>
         </label>
         <label><span data-i18n="l.end">Selesai (detik)</span>
           <div class="row">
             <input type="number" id="nEnd" min="0" step="0.01" value="0" inputmode="decimal">
-            <button type="button" id="setEnd" title="Pakai posisi player" data-i18n-title="ttl.pos">📍</button>
+            <button type="button" id="setEnd" title="Pakai posisi player" data-i18n-title="ttl.pos"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map-pin"/></svg></button>
           </div>
         </label>
       </div>
@@ -112,13 +113,13 @@ INDEX_HTML = r"""<!DOCTYPE html>
       </label>
 
       <div class="actions">
-        <button type="button" id="preview" class="ghost" data-i18n="btn.preview">▶ Putar bagian terpilih</button>
-        <button type="button" id="cut" class="primary" data-i18n="btn.cut">✂️ Potong &amp; Unduh</button>
-        <button type="button" id="cancel" class="danger hidden" data-i18n="btn.cancel">✖ Batalkan proses</button>
+        <button type="button" id="preview" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#play"/></svg><span data-i18n="btn.preview">Putar bagian terpilih</span></button>
+        <button type="button" id="cut" class="primary"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#scissors"/></svg><span data-i18n="btn.cut">Potong &amp; Unduh</span></button>
+        <button type="button" id="cancel" class="danger hidden"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#x"/></svg><span data-i18n="btn.cancel">Batalkan proses</span></button>
       </div>
       <div class="actions sec">
-        <button type="button" id="resetRange" class="ghost" data-i18n="btn.reset">↺ Reset rentang</button>
-        <button type="button" id="changeFile" class="ghost" data-i18n="btn.change">🔄 Ganti / Unggah ulang file</button>
+        <button type="button" id="resetRange" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#rotate-ccw"/></svg><span data-i18n="btn.reset">Reset rentang</span></button>
+        <button type="button" id="changeFile" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#refresh-cw"/></svg><span data-i18n="btn.change">Ganti / Unggah ulang file</span></button>
       </div>
 
       <div class="progress hidden" id="progWrap"><div id="prog"></div></div>
@@ -131,7 +132,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <h2 data-i18n="guide.h">Panduan singkat</h2>
     <ol>
       <li data-i18n-html="guide.1">Unggah file dari perangkat atau tempel link langsung ke file.</li>
-      <li data-i18n-html="guide.2">Geser penanda di waveform atau isi detik Mulai &amp; Selesai. Tombol 📍 mengambil posisi player saat ini.</li>
+      <li data-i18n-html="guide.2">Geser penanda di waveform atau isi detik Mulai &amp; Selesai. Tombol <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map-pin"/></svg> mengambil posisi player saat ini.</li>
       <li data-i18n-html="guide.3">Pilih mode, klik <b>Potong &amp; Unduh</b>.</li>
       <li data-i18n-html="guide.4">Salah potong? Klik <b>Reset rentang</b>, <b>Ganti file</b>, atau <b>Edit hasil ini</b> untuk memotong lagi.</li>
     </ol>
@@ -141,7 +142,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <footer class="footer">
   <div class="footer-in">
     <div class="f-col f-brand">
-      <a class="brand" href="/"><span>AVEdit</span></a>
+      <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEdit</span></a>
       <p data-i18n="foot.desc">Pemotong audio &amp; video sederhana yang berjalan langsung di browser. Tanpa instalasi, tanpa ribet.</p>
     </div>
     <div class="f-col">
@@ -162,7 +163,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
   </div>
   <div class="footer-bar">
     <span>© {{YEAR}} AVEdit. <span data-i18n="foot.rights">Semua hak dilindungi.</span></span>
-    <a href="#top" class="totop" data-i18n="foot.top">↑ Kembali ke atas</a>
+    <a href="#top" class="totop"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#arrow-up"/></svg><span data-i18n="foot.top">Kembali ke atas</span></a>
   </div>
 </footer>
 
