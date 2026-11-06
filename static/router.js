@@ -46,7 +46,10 @@
     var base = document.createElement('span'); base.className = 'av-base'; base.textContent = name;
     fillEl = document.createElement('span'); fillEl.className = 'av-fill'; fillEl.textContent = name;
     word.appendChild(base); word.appendChild(fillEl);
-    loaderEl.appendChild(word);
+    var box = document.createElement('div');
+    box.className = 'av-box';
+    box.appendChild(word);
+    loaderEl.appendChild(box);
     document.documentElement.appendChild(loaderEl); // di luar <body> agar tidak ikut terbuang saat ganti halaman
   }
   function fillTo(pct, ms, ease) {
