@@ -23,6 +23,7 @@ api/index.py          Flask app (HTML page, /api/health, /api/fetch, cron)
 static/app.js         Editor logic
 static/i18n.js        Translations (id/en) + theme switcher
 static/style.css      Styles (dark & light theme via CSS variables)
+static/icons.svg      SVG icon sprite (Lucide)
 static/ffmpeg/        ffmpeg.wasm wrapper
 vercel.json           Vercel config
 ```
@@ -41,6 +42,9 @@ Push to GitHub and import into [Vercel](https://vercel.com) — `vercel.json` is
 - **Add/edit text or a language:** edit the dictionary in `static/i18n.js`; use `data-i18n`, `data-i18n-html`, `data-i18n-ph`, `data-i18n-title` in HTML and `tr('key')` in JS.
 - **Theme colors:** edit the CSS variables in `:root` and `:root[data-theme="light"]` in `static/style.css`.
 - Preferences are stored in `localStorage` (`avedit-lang`, `avedit-theme`).
+
+## Icons
+Icons are from [Lucide](https://lucide.dev) (ISC license — free for commercial use). Sprite: `static/icons.svg`; license text: `static/LICENSE-lucide.txt`. To add an icon, copy its `<symbol>` into the sprite and use `<svg class="ic"><use href="/static/icons.svg#name"/></svg>`.
 
 ## License
 See [LICENSE](LICENSE).
@@ -73,3 +77,6 @@ cd api && flask --app index run
 ### Kustomisasi
 - **Teks/bahasa:** ubah kamus di `static/i18n.js`.
 - **Warna tema:** ubah variabel CSS di `static/style.css` (`:root` dan `:root[data-theme="light"]`).
+
+### Ikon
+Ikon memakai [Lucide](https://lucide.dev) (lisensi ISC — gratis untuk komersial). Sprite: `static/icons.svg`; teks lisensi: `static/LICENSE-lucide.txt`.
