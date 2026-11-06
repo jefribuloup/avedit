@@ -16,9 +16,9 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0612">
-<title>AVEdit — Potong Audio & Video</title>
+<title>AVEditor — Potong Audio & Video</title>
 <script>
-(function(){try{var m=localStorage.getItem("avedit-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
+(function(){try{var m=localStorage.getItem("AVEditor-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
 </script>
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -26,7 +26,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEdit</span></a>
+    <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEditor</span></a>
     <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#menu"/></svg></button>
     <div class="links" id="links">
       <a href="#editor-sec">Editor</a>
@@ -142,7 +142,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
 <footer class="footer">
   <div class="footer-in">
     <div class="f-col f-brand">
-      <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEdit</span></a>
+      <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEditor</span></a>
       <p data-i18n="foot.desc">Pemotong audio &amp; video sederhana yang berjalan langsung di browser. Tanpa instalasi, tanpa ribet.</p>
     </div>
     <div class="f-col">
@@ -162,7 +162,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
   <div class="footer-bar">
-    <span>© {{YEAR}} AVEdit. <span data-i18n="foot.rights">Semua hak dilindungi.</span></span>
+    <span>© {{YEAR}} AVEditor. <span data-i18n="foot.rights">Semua hak dilindungi.</span></span>
     <a href="#top" class="totop"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#arrow-up"/></svg><span data-i18n="foot.top">Kembali ke atas</span></a>
   </div>
 </footer>
