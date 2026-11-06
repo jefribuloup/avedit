@@ -1,10 +1,12 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const nS = $('nStart'), nE = $('nEnd'), wave = $('wave'), zoomR = $('zoom'), pan = $('pan');
-  let file = null, media = null, dur = 0, ff = null, objUrl = null, stopAt = null;
+  let file = null, media = null, dur = 0, ff = window.__avFF || null, objUrl = null, stopAt = null;
   let cancelled = false, resultBlob = null, resultName = '';
   let selS = 0, selE = 0, vStart = 0, vEnd = 0, drag = null, raf = 0;
   let mono = null, peaks = null, wsr = 8000, waveMsg = '', waveId = 0, waveBusy = null;
+  const SIG = window.AVRouter ? window.AVRouter.signal : undefined; // listener global batal otomatis saat pindah halaman
+  let busyFF = 0;
 
   const BUCKET = 80, TARGET_SR = 8000, MINSPAN = 0.5, MAX_WAVE_MB = 400;
   const NATIVE = /\.(mp4|m4v|mov|webm|mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i;
@@ -15,14 +17,6 @@
   const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
   const status = (t, err = false) => { const el = $('status'); el.textContent = t; el.classList.toggle('err', err); };
   const startStatus = (t, err = false) => { const el = $('startStatus'); el.textContent = t; el.classList.toggle('err', err); };
-
-  /* ---------- NAVBAR ---------- */
-  $('burger').onclick = () => {
-    const open = $('links').classList.toggle('open');
-    $('burger').setAttribute('aria-expanded', open);
-  };
-  $('links').addEventListener('click', (e) => { if (e.target.closest('a,button')) $('links').classList.remove('open'); });
-  $('navNew').onclick = () => { resetAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   /* ---------- TABS ---------- */
   document.querySelectorAll('.tab').forEach((t) => {
@@ -326,12 +320,19 @@
       }
     }
   }
-  window.addEventListener('resize', draw);
-  if (window.ResizeObserver) new ResizeObserver(draw).observe(wave);
+  window.addEventListener('resize', draw, { signal: SIG });
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(draw); ro.observe(wave);
+    window.addEventListener('avedit:pageleave', () => ro.disconnect(), { once: true });
+  }
 
   /* ---------- ANALISIS AUDIO -> WAVEFORM ---------- */
   async function decodeViaFFmpeg(f, ctx) {
     const inst = await getFF();
+    busyFF++;
+    try { return await decodeWith(inst, f, ctx); } finally { busyFF--; }
+  }
+  async function decodeWith(inst, f, ctx) {
     const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
     const inName = 'wave_in.' + ext;
     await inst.writeFile(inName, new Uint8Array(await f.arrayBuffer()));
@@ -387,7 +388,7 @@
   /* ---------- RESET / GANTI FILE ---------- */
   function resetAll() {
     waveId++; cancelAnimationFrame(raf);
-    if (ff) { try { ff.terminate(); } catch (_) {} ff = null; }
+    if (ff) { try { ff.terminate(); } catch (_) {} ff = null; window.__avFF = null; }
     if (media) media.pause();
     if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
     file = null; media = null; dur = 0; resultBlob = null; stopAt = null; mono = null; peaks = null; waveMsg = ''; waveBusy = null;
@@ -398,8 +399,8 @@
     $('editor').classList.add('hidden'); $('startCard').classList.remove('hidden');
   }
   $('changeFile').onclick = resetAll;
-  document.addEventListener('langchange', () => { if (dur) setRange(selS, selE); });
-  document.addEventListener('themechange', () => { if (dur) draw(); });
+  document.addEventListener('langchange', () => { if (dur) setRange(selS, selE); }, { signal: SIG });
+  document.addEventListener('themechange', () => { if (dur) draw(); }, { signal: SIG });
 
   /* ---------- FFMPEG ---------- */
   async function getFF() {
@@ -417,13 +418,13 @@
       coreURL: await blobURL(base + 'ffmpeg-core.js', 'text/javascript'),
       wasmURL: await blobURL(base + 'ffmpeg-core.wasm', 'application/wasm'),
     });
-    ff = inst;
+    ff = window.__avFF = inst; // mesin dipakai ulang saat kembali ke halaman editor
     return ff;
   }
 
   $('cancel').onclick = () => {
     cancelled = true;
-    if (ff) { try { ff.terminate(); } catch (_) {} ff = null; }
+    if (ff) { try { ff.terminate(); } catch (_) {} ff = null; window.__avFF = null; }
     status(tr('st.cancelled'));
   };
 
@@ -431,13 +432,13 @@
   $('cut').onclick = async () => {
     const s = selS, e = selE, d = e - s;
     if (d <= 0) return status(tr('st.badRange'), true);
-    cancelled = false;
+    cancelled = false; let counted = false;
     $('cut').classList.add('hidden'); $('cancel').classList.remove('hidden');
     $('result').innerHTML = ''; $('prog').style.width = '0'; $('progWrap').classList.remove('hidden');
     try {
       if (waveBusy) { status(tr('st.waitWave')); await waveBusy.catch(() => {}); }
       if (cancelled) return;
-      const f = await getFF();
+      const f = await getFF(); busyFF++; counted = true;
       const isVideo = media.tagName === 'VIDEO';
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
       const inName = 'input.' + ext;
@@ -478,8 +479,16 @@
       if (cancelled) status(tr('st.cancelled'));
       else { console.error(err); status(tr('st.error') + (err.message || err), true); }
     } finally {
+      if (counted) busyFF--;
       $('cut').classList.remove('hidden'); $('cancel').classList.add('hidden');
       if (cancelled) $('progWrap').classList.add('hidden');
     }
   };
+  /* ---------- BERSIH-BERSIH SAAT PINDAH HALAMAN (router tanpa reload) ---------- */
+  window.addEventListener('avedit:pageleave', () => {
+    waveId++; cancelAnimationFrame(raf);
+    if (media) { try { media.pause(); } catch (_) {} }
+    if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
+    if (busyFF > 0 && ff) { try { ff.terminate(); } catch (_) {} ff = null; window.__avFF = null; }
+  }, { once: true });
 })();
