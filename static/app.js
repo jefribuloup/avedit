@@ -468,8 +468,8 @@
       const pv = document.createElement(isVideo ? 'video' : 'audio'); pv.controls = true; pv.playsInline = true; pv.src = url;
       const acts = document.createElement('div'); acts.className = 'acts';
       const a = document.createElement('a'); a.className = 'dl'; a.href = url; a.download = resultName;
-      a.textContent = tr('r.dl', { name: resultName, size: mb(resultBlob.size) });
-      const again = document.createElement('button'); again.type = 'button'; again.textContent = tr('r.edit');
+      a.innerHTML = window.ICON('download'); a.append(Object.assign(document.createElement('span'), { textContent: tr('r.dl', { name: resultName, size: mb(resultBlob.size) }) }));
+      const again = document.createElement('button'); again.type = 'button'; again.innerHTML = window.ICON('pencil'); again.append(Object.assign(document.createElement('span'), { textContent: tr('r.edit') }));
       again.onclick = () => load(new File([resultBlob], resultName, { type: mime }));
       acts.append(a, again);
       $('result').append(pv, acts);
