@@ -11,6 +11,12 @@
   --dim:rgba(246,243,252,.65);--shadow:rgba(76,29,149,.12);--danger-txt:#991b1b;color-scheme:light;
 }
 .btn-ico{padding:8px 12px;line-height:1.2}
+/* IKON (Lucide, ISC) */
+.ic{width:1.15em;height:1.15em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em}
+.ic-xl{display:block;width:46px;height:46px;margin:0 auto 8px;color:var(--acc2);stroke-width:1.6}
+.brand .ic{width:1.35em;height:1.35em;color:var(--acc2)}
+.burger .ic{width:1.35em;height:1.35em}
+.footer-bar a.totop{display:inline-flex;align-items:center;gap:6px}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
@@ -79,7 +85,7 @@ input[type=number],input[type=url],select{width:100%;padding:11px 12px;border-ra
 input:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(139,92,246,.25)}
 select{margin-top:4px}
 .mode{margin-top:14px}
-button{cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:10px;padding:10px 14px;font:inherit;transition:.15s}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:10px;padding:10px 14px;font:inherit;transition:.15s}
 button:hover{border-color:var(--acc)}
 button:disabled{opacity:.5;cursor:not-allowed}
 .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -97,7 +103,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .result{margin-top:12px}
 .result video,.result audio{width:100%;margin-bottom:10px;border-radius:12px;max-height:min(380px,50vh)}
 .result .acts{display:flex;gap:10px;flex-wrap:wrap}
-.result a.dl{display:inline-block;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:600}
+.result a.dl{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:600}
 
 /* FOOTER */
 .footer{margin-top:20px;border-top:1px solid var(--line);background:linear-gradient(180deg,var(--foot-a),var(--foot-b))}
