@@ -25,6 +25,12 @@ static/i18n.js        Translations (id/en) + theme switcher
 static/style.css      Styles (dark & light theme via CSS variables)
 static/icons.svg      SVG icon sprite (Lucide)
 static/ffmpeg/        ffmpeg.wasm wrapper
+static/auth.js        Login/sign-up page logic (manual form + Google One Tap)
+static/authnav.js     Navbar account box (Sign in / Sign up / user + Sign out)
+lib/auth.py           Auth routes: /login /daftar /auth/* /api/me
+lib/db.py             Postgres accounts + rate limit (tables avedit_users, avedit_rate_limits)
+lib/authpage.py       Login/sign-up page template
+.env.example          Environment variable template
 vercel.json           Vercel config
 ```
 
@@ -42,6 +48,22 @@ Push to GitHub and import into [Vercel](https://vercel.com) — `vercel.json` is
 - **Add/edit text or a language:** edit the dictionary in `static/i18n.js`; use `data-i18n`, `data-i18n-html`, `data-i18n-ph`, `data-i18n-title` in HTML and `tr('key')` in JS.
 - **Theme colors:** edit the CSS variables in `:root` and `:root[data-theme="light"]` in `static/style.css`.
 - Preferences are stored in `localStorage` (`avedit-lang`, `avedit-theme`).
+
+## Accounts (Login & Sign-up)
+Optional accounts, modeled on the [Talkins](https://github.com/jefribuloup/talkins) auth flow:
+- **Manual**: sign-up form (name, email, username, password) and login with username *or* email. Passwords are hashed (Werkzeug); 5 wrong attempts lock the account for 15 minutes; login/sign-up are rate-limited per IP; CSRF token on every auth POST.
+- **Google**: One Tap / official Google button (ID token verified server-side: signature, audience, issuer, expiry). Falls back to OAuth 2.0 redirect (`/auth/google`) if the Google script can't load. Signing in with Google creates the account automatically if it doesn't exist.
+- Pages: `/login`, `/daftar`. Navbar shows **Sign in / Sign up**, or the user's name + **Sign out**. The account box is hidden when `DATABASE_URL` is not set, so the editor keeps working without a database.
+- `REQUIRE_LOGIN=1` makes the editor page require login (default `0`, optional). Note: editing runs in the browser, so this gates the page, not the processing.
+
+**Setup**
+1. Create a Postgres database (Neon / Vercel Postgres) → set `DATABASE_URL`. Tables are created automatically.
+2. Set `SECRET_KEY` (32+ random chars): `python -c "import secrets; print(secrets.token_hex(32))"`.
+3. Google Cloud Console → *APIs & Services → Credentials → OAuth client ID (Web)*:
+   - **Authorized JavaScript origins**: `https://avedit.vercel.app` (+ `http://localhost:5000` for local)
+   - **Authorized redirect URIs** (fallback flow): `https://avedit.vercel.app/auth/google/callback`
+   - Set `GOOGLE_CLIENT_ID` (+ `GOOGLE_CLIENT_SECRET` for the fallback flow). Optionally `APP_BASE_URL`.
+4. Redeploy. See `.env.example` for all variables.
 
 ## Icons
 Icons are from [Lucide](https://lucide.dev) (ISC license — free for commercial use). Sprite: `static/icons.svg`; license text: `static/LICENSE-lucide.txt`. To add an icon, copy its `<symbol>` into the sprite and use `<svg class="ic"><use href="/static/icons.svg#name"/></svg>`.
@@ -80,3 +102,19 @@ cd api && flask --app index run
 
 ### Ikon
 Ikon memakai [Lucide](https://lucide.dev) (lisensi ISC — gratis untuk komersial). Sprite: `static/icons.svg`; teks lisensi: `static/LICENSE-lucide.txt`.
+
+### Akun (Login & Daftar)
+Akun bersifat opsional, mengikuti alur auth aplikasi [Talkins](https://github.com/jefribuloup/talkins):
+- **Manual**: formulir daftar (nama, email, username, kata sandi) dan masuk dengan username *atau* email. Kata sandi di-hash; 5 kali salah mengunci akun 15 menit; login/daftar dibatasi per IP; semua POST auth memakai token CSRF.
+- **Google**: One Tap / tombol resmi Google (ID token diverifikasi di server). Cadangan: OAuth 2.0 redirect (`/auth/google`). Masuk dengan Google otomatis membuat akun bila belum ada.
+- Halaman: `/login`, `/daftar`. Navbar menampilkan **Masuk / Daftar**, atau nama pengguna + **Keluar**. Kotak akun disembunyikan bila `DATABASE_URL` belum diisi, jadi editor tetap jalan tanpa database.
+- `REQUIRE_LOGIN=1` mewajibkan login untuk halaman editor (default `0`). Catatan: pemotongan berjalan di browser, jadi yang dikunci halamannya, bukan prosesnya.
+
+**Pengaturan**
+1. Buat database Postgres (Neon / Vercel Postgres) → isi `DATABASE_URL`. Tabel dibuat otomatis.
+2. Isi `SECRET_KEY` (32+ karakter acak): `python -c "import secrets; print(secrets.token_hex(32))"`.
+3. Google Cloud Console → *APIs & Services → Credentials → OAuth client ID (Web)*:
+   - **Authorized JavaScript origins**: `https://avedit.vercel.app` (+ `http://localhost:5000` untuk lokal)
+   - **Authorized redirect URIs** (alur cadangan): `https://avedit.vercel.app/auth/google/callback`
+   - Isi `GOOGLE_CLIENT_ID` (+ `GOOGLE_CLIENT_SECRET` untuk alur cadangan). Opsional `APP_BASE_URL`.
+4. Deploy ulang. Daftar lengkap variabel ada di `.env.example`.
