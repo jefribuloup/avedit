@@ -11,7 +11,13 @@
   const mode = card.dataset.mode === 'register' ? 'register' : 'login';
   let busy = false, loadTimer = null, lastErr = null;
 
-  const goTo = (url) => { window.location.href = url; };
+  const SIG = window.AVRouter ? window.AVRouter.signal : undefined;
+  const navTo = (url) => { if (window.AVRouter) window.AVRouter.go(url); else window.location.href = url; };
+  // setelah login/daftar: perbarui kotak akun di navbar, lalu pindah halaman tanpa reload
+  const goTo = (url) => {
+    const go = () => { if (window.AVRouter) window.AVRouter.go(url, { replace: true }); else window.location.href = url; };
+    (window.AVAuth ? window.AVAuth.refresh() : Promise.resolve()).then(go, go);
+  };
   const gid = () => window.google && window.google.accounts && window.google.accounts.id;
 
   function showError(code, minutes) {
@@ -22,8 +28,8 @@
     goRegister.hidden = !((code === 'invalid_credentials' || code === 'not_registered') && mode === 'login');
   }
   function clearError() { lastErr = null; errEl.hidden = true; goRegister.hidden = true; }
-  document.addEventListener('langchange', () => { if (lastErr) showError(lastErr.code, lastErr.minutes); });
-  goRegister.addEventListener('click', () => goTo('/daftar'));
+  document.addEventListener('langchange', () => { if (lastErr) showError(lastErr.code, lastErr.minutes); }, { signal: SIG });
+  goRegister.addEventListener('click', () => navTo('/daftar'));
 
   const urlErr = new URLSearchParams(location.search).get('error');
   if (urlErr) showError(urlErr);
