@@ -32,14 +32,7 @@ AUTH_HTML = """<!DOCTYPE html>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<nav class="nav"><div class="nav-in">
-  {{ brand|safe }}
-  <div class="nav-tools">
-    <a class="auth-link" href="/">""" + _ic("arrow-left") + """<span data-i18n="auth.back">Kembali ke editor</span></a>
-    <button type="button" id="langBtn" class="btn-ico" aria-label="Language">""" + _ic("globe") + """<span id="langLbl">EN</span></button>
-    <button type="button" id="themeBtn" class="btn-ico" aria-label="Theme">""" + _ic("sun") + """</button>
-  </div>
-</div></nav>
+{{ nav|safe }}
 
 <main class="login-wrap">
   <section class="login-card" id="loginCard" data-next="{{ next_url }}" data-csrf="{{ csrf_token }}" data-client-id="{{ google_client_id }}" data-mode="{{ mode }}">
@@ -92,7 +85,11 @@ AUTH_HTML = """<!DOCTYPE html>
   </section>
 </main>
 
+{{ footer|safe }}
+
 <script src="/static/i18n.js"></script>
+<script src="/static/authnav.js"></script>
+<script src="/static/router.js"></script>
 <script src="/static/auth.js"></script>
 </body>
 </html>
