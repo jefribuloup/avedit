@@ -372,37 +372,40 @@
       const end = () => { w.terminate(); URL.revokeObjectURL(url); };
       w.onmessage = (e) => { end(); res(e.data); };
       w.onerror = (e) => { end(); rej(e.error || new Error('worker')); };
-      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      const whole = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength;
+      const buf = whole ? bytes.buffer : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
       w.postMessage({ buf, bucket: BUCKET }, [buf]);
     });
   }
 
-  async function decodeViaFFmpeg(f, ctx, raw) {
+  async function decodeViaFFmpeg(f, ctx, raw, sr) {
     const inst = await getFF();
     busyFF++;
-    try { return await decodeWith(inst, f, ctx, raw); } finally { busyFF--; }
+    try { return await decodeWith(inst, f, ctx, raw, sr); } finally { busyFF--; }
   }
   /* Baca file lewat WORKERFS (dibaca bertahap dari disk, tidak dimuat penuh ke RAM) -> aman untuk file >1 GB.
      Jika mount gagal, fallback ke writeFile (hanya untuk file kecil). */
   async function mountInput(inst, f, base) {
     const dir = '/' + base + '_src';
     try {
-      await inst.createDir(dir);
-      await inst.mount('WORKERFS', { files: [f] }, dir);
+      await inst.unmount(dir).catch(() => {});          // bersihkan sisa mount sebelumnya
+      await inst.createDir(dir).catch(() => {});        // abaikan jika folder sudah ada
+      const ok = await inst.mount('WORKERFS', { files: [f] }, dir);
+      if (!ok) throw new Error('WORKERFS tidak tersedia');
       return { path: dir + '/' + f.name, done: async () => { await inst.unmount(dir).catch(() => {}); await inst.deleteDir(dir).catch(() => {}); } };
     } catch (e) {
       await inst.deleteDir(dir).catch(() => {});
-      if (f.size > 1.5 * 1073741824) throw e;
+      if (f.size > 400 * 1048576) throw new Error('mount gagal: ' + ((e && e.message) || e)); // file besar tidak boleh dimuat penuh ke RAM
       const name = base + '_in.' + ((f.name.split('.').pop() || 'bin').toLowerCase());
       await inst.writeFile(name, new Uint8Array(await f.arrayBuffer()));
       return { path: name, done: async () => { await inst.deleteFile(name).catch(() => {}); } };
     }
   }
 
-  async function decodeWith(inst, f, ctx, raw) {
+  async function decodeWith(inst, f, ctx, raw, sr) {
     const src = await mountInput(inst, f, 'wave');
     let code;
-    try { code = await inst.exec(['-i', src.path, '-vn', '-sn', '-dn', '-ac', '1', '-ar', String(TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']); }
+    try { code = await inst.exec(['-i', src.path, '-vn', '-sn', '-dn', '-ac', '1', '-ar', String(sr || TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']); }
     finally { await src.done(); }
     if (code !== 0) throw new Error(tr('e.noAudio'));
     const data = await inst.readFile('wave.wav');
@@ -422,7 +425,9 @@
     try {
       ctx = new Ctx({ sampleRate: TARGET_SR });
       if (big) { /* file besar: ffmpeg (worker) -> WAV -> hitung puncak di worker lain; main thread tetap bebas */
-        const bytes = await decodeViaFFmpeg(f, ctx, true);
+        const d0 = media && isFinite(media.duration) ? media.duration : 0;   // batasi total sampel (~40 juta) agar hemat memori
+        const sr = d0 ? Math.max(1000, Math.min(TARGET_SR, Math.floor(40e6 / d0))) : TARGET_SR;
+        const bytes = await decodeViaFFmpeg(f, ctx, true, sr);
         if (id !== waveId) return;
         const r = await analyzeInWorker(bytes);
         if (id !== waveId) return;
@@ -453,7 +458,8 @@
       peaks = { min: pmin, max: pmax, gain: top > 0.001 ? Math.min(0.95 / top, 30) : 1 };
       waveMsg = '';
     } catch (e) {
-      if (id === waveId) waveMsg = tr('w.na');
+      console.error('[AVEdit] waveform gagal:', e);
+      if (id === waveId) waveMsg = tr('w.naWhy', { why: String((e && e.message) || e).replace(/\s+/g, ' ').slice(0, 140) });
     } finally {
       if (ctx && ctx.close) ctx.close().catch(() => {});
       if (id === waveId) draw();
