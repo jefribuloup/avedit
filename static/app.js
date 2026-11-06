@@ -8,7 +8,13 @@
   const SIG = window.AVRouter ? window.AVRouter.signal : undefined; // listener global batal otomatis saat pindah halaman
   let busyFF = 0;
 
-  const BUCKET = 80, TARGET_SR = 8000, MINSPAN = 0.5, MAX_WAVE_MB = 400;
+  const BUCKET = 80, TARGET_SR = 8000, MINSPAN = 0.5;
+  /* Batas ukuran file (MB) — ubah di sini. Di atas warnMB: mode "file besar" (proses di background).
+     Di atas hugeMB: Mode Cepat otomatis. Di atas max: ditolak. */
+  const SIZE = { warnMB: 200, hugeMB: 1024, maxMB: 2048, maxMobileMB: 500 };
+  const isMobile = () => !!(navigator.userAgentData && navigator.userAgentData.mobile) ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 820);
+  const fmtLimit = (m) => (m >= 1024 ? (m / 1024) + ' GB' : m + ' MB');
   const NATIVE = /\.(mp4|m4v|mov|webm|mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i;
   const STEPS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
 
@@ -108,6 +114,11 @@
   }
 
   function load(f) {
+    const limit = isMobile() ? SIZE.maxMobileMB : SIZE.maxMB;
+    if (f.size > limit * 1048576) {
+      startStatus(tr(isMobile() ? 'sz.rejectMobile' : 'sz.reject', { size: mb(f.size), max: fmtLimit(limit) }), true);
+      fileIn.value = ''; return;
+    }
     file = f;
     waveId++; mono = null; peaks = null; waveMsg = '';
     if (objUrl) URL.revokeObjectURL(objUrl);
@@ -119,6 +130,8 @@
     $('playerBox').appendChild(media);
     $('fname').textContent = `${f.name} — ${mb(f.size)}`;
     $('result').innerHTML = ''; status(''); $('progWrap').classList.add('hidden');
+    if (f.size >= SIZE.hugeMB * 1048576) { $('mode').value = 'fast'; status(tr('sz.huge')); }
+    else if (f.size > SIZE.warnMB * 1048576) status(tr('sz.large'));
     media.onloadedmetadata = () => {
       dur = isFinite(media.duration) ? media.duration : 0;
       if (!dur) { startStatus(tr('e.noDur'), true); return; }
@@ -327,33 +340,95 @@
   }
 
   /* ---------- ANALISIS AUDIO -> WAVEFORM ---------- */
-  async function decodeViaFFmpeg(f, ctx) {
+  /* Worker (thread terpisah) untuk menghitung puncak waveform file besar agar UI tidak membeku. */
+  function peakWorker() {
+    self.onmessage = (e) => {
+      const buf = e.data.buf, B = e.data.bucket, dv = new DataView(buf);
+      let o = 12, sr = 8000, ds = 0, dl = 0;
+      while (o + 8 <= dv.byteLength) {
+        const id = String.fromCharCode(dv.getUint8(o), dv.getUint8(o + 1), dv.getUint8(o + 2), dv.getUint8(o + 3));
+        const sz = dv.getUint32(o + 4, true);
+        if (id === 'fmt ') sr = dv.getUint32(o + 12, true);
+        if (id === 'data') { ds = o + 8; dl = Math.min(sz, dv.byteLength - ds); break; }
+        o += 8 + sz + (sz & 1);
+      }
+      const n = dl >> 1, m = new Float32Array(n);
+      for (let i = 0; i < n; i++) m[i] = dv.getInt16(ds + i * 2, true) / 32768;
+      const nb = Math.ceil(n / B), pmin = new Float32Array(nb), pmax = new Float32Array(nb);
+      let top = 0;
+      for (let b = 0; b < nb; b++) {
+        let mn = 1, mx = -1; const end = Math.min(n, (b + 1) * B);
+        for (let i = b * B; i < end; i++) { const v = m[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+        pmin[b] = mn; pmax[b] = mx;
+        const a = Math.max(Math.abs(mn), Math.abs(mx)); if (a > top) top = a;
+      }
+      self.postMessage({ m, pmin, pmax, sr, gain: top > 0.001 ? Math.min(0.95 / top, 30) : 1 }, [m.buffer, pmin.buffer, pmax.buffer]);
+    };
+  }
+  function analyzeInWorker(bytes) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(new Blob(['(' + peakWorker.toString() + ')()'], { type: 'text/javascript' }));
+      const w = new Worker(url);
+      const end = () => { w.terminate(); URL.revokeObjectURL(url); };
+      w.onmessage = (e) => { end(); res(e.data); };
+      w.onerror = (e) => { end(); rej(e.error || new Error('worker')); };
+      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      w.postMessage({ buf, bucket: BUCKET }, [buf]);
+    });
+  }
+
+  async function decodeViaFFmpeg(f, ctx, raw) {
     const inst = await getFF();
     busyFF++;
-    try { return await decodeWith(inst, f, ctx); } finally { busyFF--; }
+    try { return await decodeWith(inst, f, ctx, raw); } finally { busyFF--; }
   }
-  async function decodeWith(inst, f, ctx) {
-    const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
-    const inName = 'wave_in.' + ext;
-    await inst.writeFile(inName, new Uint8Array(await f.arrayBuffer()));
-    const code = await inst.exec(['-i', inName, '-vn', '-ac', '1', '-ar', String(TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']);
-    await inst.deleteFile(inName).catch(() => {});
+  /* Baca file lewat WORKERFS (dibaca bertahap dari disk, tidak dimuat penuh ke RAM) -> aman untuk file >1 GB.
+     Jika mount gagal, fallback ke writeFile (hanya untuk file kecil). */
+  async function mountInput(inst, f, base) {
+    const dir = '/' + base + '_src';
+    try {
+      await inst.createDir(dir);
+      await inst.mount('WORKERFS', { files: [f] }, dir);
+      return { path: dir + '/' + f.name, done: async () => { await inst.unmount(dir).catch(() => {}); await inst.deleteDir(dir).catch(() => {}); } };
+    } catch (e) {
+      await inst.deleteDir(dir).catch(() => {});
+      if (f.size > 1.5 * 1073741824) throw e;
+      const name = base + '_in.' + ((f.name.split('.').pop() || 'bin').toLowerCase());
+      await inst.writeFile(name, new Uint8Array(await f.arrayBuffer()));
+      return { path: name, done: async () => { await inst.deleteFile(name).catch(() => {}); } };
+    }
+  }
+
+  async function decodeWith(inst, f, ctx, raw) {
+    const src = await mountInput(inst, f, 'wave');
+    let code;
+    try { code = await inst.exec(['-i', src.path, '-vn', '-sn', '-dn', '-ac', '1', '-ar', String(TARGET_SR), '-c:a', 'pcm_s16le', 'wave.wav']); }
+    finally { await src.done(); }
     if (code !== 0) throw new Error(tr('e.noAudio'));
     const data = await inst.readFile('wave.wav');
     await inst.deleteFile('wave.wav').catch(() => {});
+    if (raw) return data;
     return ctx.decodeAudioData(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
   }
 
   async function buildWave(f) {
     const id = ++waveId;
     peaks = null; mono = null;
-    if (f.size > MAX_WAVE_MB * 1048576) { waveMsg = tr('w.big'); draw(); return; }
+    const big = f.size > SIZE.warnMB * 1048576;
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) { waveMsg = tr('w.unsupported'); draw(); return; }
-    waveMsg = tr('w.analyzing'); draw();
+    waveMsg = tr(big ? 'w.analyzingBig' : 'w.analyzing'); draw();
     let ctx;
     try {
       ctx = new Ctx({ sampleRate: TARGET_SR });
+      if (big) { /* file besar: ffmpeg (worker) -> WAV -> hitung puncak di worker lain; main thread tetap bebas */
+        const bytes = await decodeViaFFmpeg(f, ctx, true);
+        if (id !== waveId) return;
+        const r = await analyzeInWorker(bytes);
+        if (id !== waveId) return;
+        wsr = r.sr; mono = r.m; peaks = { min: r.pmin, max: r.pmax, gain: r.gain }; waveMsg = '';
+        return;
+      }
       let buf;
       try { buf = await ctx.decodeAudioData(await f.arrayBuffer()); }
       catch (e) {
@@ -399,6 +474,9 @@
     $('editor').classList.add('hidden'); $('startCard').classList.remove('hidden');
   }
   $('changeFile').onclick = resetAll;
+  $('mode').addEventListener('change', () => {
+    if (file && file.size > SIZE.warnMB * 1048576 && $('mode').value === 'precise') status(tr('sz.precise'));
+  }, { signal: SIG });
   document.addEventListener('langchange', () => { if (dur) setRange(selS, selE); }, { signal: SIG });
   document.addEventListener('themechange', () => { if (dur) draw(); }, { signal: SIG });
 
@@ -441,11 +519,11 @@
       const f = await getFF(); busyFF++; counted = true;
       const isVideo = media.tagName === 'VIDEO';
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-      const inName = 'input.' + ext;
+      let src, inName;
       const precise = $('mode').value === 'precise';
       let outExt = ext, args;
       status(tr('st.reading'));
-      await f.writeFile(inName, new Uint8Array(await file.arrayBuffer()));
+      src = await mountInput(f, file, 'cut'); inName = src.path;
       if (!precise) {
         args = ['-ss', String(s), '-i', inName, '-t', String(d), '-c', 'copy', '-avoid_negative_ts', 'make_zero'];
       } else if (isVideo) {
@@ -457,11 +535,12 @@
       }
       const outName = 'output.' + outExt;
       status(tr('st.cutting'));
-      const code = await f.exec([...args, outName]);
+      let code;
+      try { code = await f.exec([...args, outName]); } finally { if (src) await src.done(); }
       if (cancelled) return;
       if (code !== 0) throw new Error(tr('e.ffFail', { code }));
       const data = await f.readFile(outName);
-      await f.deleteFile(inName).catch(() => {}); await f.deleteFile(outName).catch(() => {});
+      await f.deleteFile(outName).catch(() => {});
       const mime = (isVideo ? 'video/' : 'audio/') + (outExt === 'mp3' ? 'mpeg' : outExt);
       resultBlob = new Blob([data], { type: mime });
       resultName = `${file.name.replace(/\.[^.]+$/, '')}_cut.${outExt}`;
