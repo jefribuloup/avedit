@@ -2,7 +2,7 @@
 (() => {
   const D = {
     id: {
-      'title': 'AVEdit — Potong Audio & Video',
+      'title': 'AVEdit — Audio & Video Editor',
       'nav.guide': 'Panduan', 'nav.new': 'Mulai Baru',
       'hero.title': 'Potong <span class="grad">Audio &amp; Video</span>',
       'hero.sub': 'Pilih bagian yang kamu mau, potong, lalu unduh. Simpel dan cepat.',
@@ -48,7 +48,7 @@
       'r.dl': 'Unduh {name} ({size})', 'r.edit': 'Edit hasil ini', 'st.done': 'Selesai', 'st.error': 'Error: '
     },
     en: {
-      'title': 'AVEdit — Cut Audio & Video',
+      'title': 'AVEdit — Audio & Video Editor',
       'nav.guide': 'Guide', 'nav.new': 'Start New',
       'hero.title': 'Cut <span class="grad">Audio &amp; Video</span>',
       'hero.sub': 'Pick the part you want, cut it, then download. Simple and fast.',
