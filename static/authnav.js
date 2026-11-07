@@ -33,7 +33,9 @@
     let cur = null;
     if (location.pathname === '/') {
       const g = document.getElementById('panduan');
-      cur = (g && window.scrollY > 40 && g.getBoundingClientRect().top < window.innerHeight * 0.5) ? 'guide' : 'editor';
+      cur = (g && window.scrollY > 40 && g.getBoundingClientRect().top < window.innerHeight * 0.5) ? 'guide' : 'home';
+    } else if (location.pathname === '/dashboard') {
+      cur = 'dashboard';
     }
     links.forEach((a) => {
       const on = a.dataset.nav === cur;
