@@ -12,6 +12,11 @@ A simple audio & video cutter that runs in the browser (ffmpeg.wasm). Pick a ran
 - 🌐 Multi-language: **English / Bahasa Indonesia** (auto-detected, switchable in the navbar)
 - 🌗 **Dark / Light theme** (follows system preference, switchable, remembered)
 
+## Pages
+- `/` — landing page (features, how it works, call to action)
+- `/dashboard` — the editor (upload & cut); requires sign-in when the account database is configured
+- `/login`, `/daftar` — sign in / sign up (after signing in you are sent to `/dashboard`)
+
 ## Link security (https only)
 - The client rejects any URL that is not `https://`.
 - The server proxy (`/api/fetch`) also accepts `https` only, validates every redirect, and blocks private/loopback/link-local addresses (SSRF protection). Max proxy size ≈ 4 MB (Vercel limit).
@@ -84,6 +89,11 @@ Pemotong audio & video sederhana yang berjalan di browser (ffmpeg.wasm). Pilih r
 - ⚡ Mode Cepat (tanpa re-encode) atau 🎯 Mode Presisi (re-encode)
 - 🌐 Multi bahasa: **English / Bahasa Indonesia** (terdeteksi otomatis, bisa diganti di navbar)
 - 🌗 **Tema Gelap / Terang** (mengikuti sistem, bisa diganti, tersimpan)
+
+### Halaman
+- `/` — landing page (fitur, cara kerja, ajakan mulai)
+- `/dashboard` — editor (unggah & potong); wajib masuk jika database akun sudah dikonfigurasi
+- `/login`, `/daftar` — masuk / daftar (setelah masuk diarahkan ke `/dashboard`)
 
 ### Keamanan link (hanya https)
 - Klien menolak URL selain `https://`.
