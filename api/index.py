@@ -271,7 +271,7 @@ LANDING_MAIN = (
     '<main class="land">\n'
     '  <section class="l-hero">\n'
     '    <div class="l-copy">\n'
-    '      <span class="l-badge">' + _i("sparkles") + '<span data-i18n="land.badge">Platform editor audio & video</span></span>\n'
+    # '      <span class="l-badge">' + _i("sparkles") + '<span data-i18n="land.badge">Platform editor audio & video</span></span>\n'
     '      <h1 data-i18n-html="land.h1">Edit <span class="grad">audio &amp; video</span> dengan hasil profesional</h1>\n'
     '      <p class="l-lead" data-i18n="land.lead">Kelola pekerjaan edit Anda dari dashboard pribadi: timeline audio yang presisi, dua mode pengolahan, '
     'dan dukungan file berukuran besar untuk hasil yang konsisten.</p>\n'
