@@ -17,6 +17,12 @@ An audio & video editing platform with personal accounts and a dashboard. Pick a
 - `/dashboard` — the editor (upload & edit); requires sign-in when the account database is configured
 - `/login`, `/daftar` — sign in / sign up (after signing in you are sent to `/dashboard`)
 
+## AI crawler protection
+- `/robots.txt` disallows known AI crawlers/assistants (GPTBot, ClaudeBot, Claude-User, PerplexityBot, CCBot, Bytespider, …). The list is `AI_BOTS` in `api/index.py`.
+- The server returns **403** to requests whose User-Agent matches `AI_BOTS`; every response carries `X-Robots-Tag: noai, noimageai` (`noindex` for `/dashboard`, `/login`, `/daftar`).
+- These layers only stop bots that identify themselves honestly. For spoofed bots, enable **Vercel Firewall → Bot Management → AI Bots** (Deny) and **Bot Protection** (Challenge). CLI: `vercel firewall rules edit ai-bots --category ai-crawlers --action deny --yes`, then `vercel firewall publish`.
+- The dashboard already requires sign-in, so its content is not reachable without an account.
+
 ## Link security (https only)
 - The client rejects any URL that is not `https://`.
 - The server proxy (`/api/fetch`) also accepts `https` only, validates every redirect, and blocks private/loopback/link-local addresses (SSRF protection). Max proxy size ≈ 4 MB (Vercel limit).
@@ -94,6 +100,12 @@ Platform editor audio & video dengan akun pribadi dan dashboard. Pilih rentang d
 - `/` — landing page (fitur, cara kerja, ajakan mulai)
 - `/dashboard` — editor (unggah & edit); wajib masuk jika database akun sudah dikonfigurasi
 - `/login`, `/daftar` — masuk / daftar (setelah masuk diarahkan ke `/dashboard`)
+
+### Proteksi crawler AI
+- `/robots.txt` melarang crawler/asisten AI yang dikenal (GPTBot, ClaudeBot, Claude-User, PerplexityBot, CCBot, Bytespider, …). Daftarnya ada di `AI_BOTS` pada `api/index.py`.
+- Server membalas **403** untuk request yang User-Agent-nya cocok dengan `AI_BOTS`; semua respons membawa `X-Robots-Tag: noai, noimageai` (`noindex` untuk `/dashboard`, `/login`, `/daftar`).
+- Lapisan ini hanya menghentikan bot yang jujur menyebut identitasnya. Untuk bot yang menyamar, aktifkan **Vercel Firewall → Bot Management → AI Bots** (Deny) dan **Bot Protection** (Challenge).
+- Dashboard sudah wajib login, jadi isinya tidak bisa diakses tanpa akun.
 
 ### Keamanan link (hanya https)
 - Klien menolak URL selain `https://`.
