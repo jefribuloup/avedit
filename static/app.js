@@ -558,7 +558,7 @@
     status(tr('st.cancelled'));
   };
 
-  /* ---------- POTONG ---------- */
+  /* ---------- EDIT ---------- */
   $('cut').onclick = async () => {
     const s = selS, e = selE, d = e - s;
     if (d <= 0) return status(tr('st.badRange'), true);
