@@ -120,6 +120,12 @@
   function isPersistent(s) {
     return !!s.getAttribute('src') && PERSISTENT.indexOf(scriptName(s.getAttribute('src'))) !== -1;
   }
+  function alreadyLoaded(s) {
+    var n = scriptName(s.getAttribute('src'));
+    return Array.prototype.some.call(document.scripts, function (x) {
+      return x.getAttribute('src') && scriptName(x.getAttribute('src')) === n;
+    });
+  }
   function isKeep(el) {
     return el.tagName === 'SCRIPT' || el.matches('nav.nav, footer.footer');
   }
@@ -165,8 +171,9 @@
 
   // Jalankan ulang script milik halaman tujuan secara berurutan.
   function runPageScripts(doc) {
+    // Script "persisten" (mis. ffmpeg.js) hanya dilewati bila sudah termuat; jika belum (mis. mendarat di beranda), dimuat sekarang.
     var scripts = Array.prototype.filter.call(doc.body.children, function (el) {
-      return el.tagName === 'SCRIPT' && !isPersistent(el);
+      return el.tagName === 'SCRIPT' && !(isPersistent(el) && alreadyLoaded(el));
     });
     return scripts.reduce(function (chain, s) {
       return chain.then(function () {
