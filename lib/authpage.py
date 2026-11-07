@@ -48,8 +48,8 @@ AUTH_HTML = """<!DOCTYPE html>
     </aside>
     <div class="login-main">
     <div class="login-tabs" role="tablist">
-      <a class="login-tab{% if mode != 'register' %} active{% endif %}" href="/login{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.login">Masuk</a>
-      <a class="login-tab{% if mode == 'register' %} active{% endif %}" href="/daftar{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.register">Daftar</a>
+      <a class="login-tab{% if mode != 'register' %} active{% endif %}" href="/login{% if next_url != '/dashboard' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.login">Masuk</a>
+      <a class="login-tab{% if mode == 'register' %} active{% endif %}" href="/daftar{% if next_url != '/dashboard' %}?next={{ next_url|urlencode }}{% endif %}" role="tab" data-i18n="auth.tab.register">Daftar</a>
     </div>
 
     {% if mode == 'register' %}
