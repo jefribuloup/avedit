@@ -68,7 +68,7 @@ DASH_HTML = r"""<!DOCTYPE html>
 <meta name="robots" content="noindex, nofollow, noai, noimageai">
 <title>Dashboard — AVEditor</title>
 <script>
-(function(){try{var m=localStorage.getItem("AVEditor-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
+(function(){try{var m=localStorage.getItem("avedit-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;var c=document.querySelector('meta[name="theme-color"]');if(c)c.content=m==="light"?"#f6f3fc":"#0a0612";}catch(e){document.documentElement.dataset.theme="dark";}})();
 </script>
 <link rel="stylesheet" href="/static/style.css">
 </head>
