@@ -24,6 +24,18 @@
   const status = (t, err = false) => { const el = $('status'); el.textContent = t; el.classList.toggle('err', err); };
   const startStatus = (t, err = false) => { const el = $('startStatus'); el.textContent = t; el.classList.toggle('err', err); };
 
+  /* ---------- SAPAAN DASHBOARD ---------- */
+  let helloName = '';
+  const paintHello = () => {
+    const el = $('dashHello'); if (!el || !helloName) return;
+    el.textContent = tr('dash.hello', { name: helloName }); el.classList.add('on');
+  };
+  fetch('/api/me', { credentials: 'same-origin' }).then((r) => r.json()).then((j) => {
+    const u = j && j.authenticated && j.user;
+    if (u) { helloName = u.name || u.username || ''; paintHello(); }
+  }).catch(() => {});
+  document.addEventListener('langchange', paintHello, { signal: SIG });
+
   /* ---------- TABS ---------- */
   document.querySelectorAll('.tab').forEach((t) => {
     t.onclick = () => {
