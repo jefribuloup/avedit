@@ -17,12 +17,55 @@ from lib import auth  # noqa: E402
 app = Flask(__name__)
 app.secret_key = auth.load_secret_key()
 
+# ---------- Proteksi dari crawler & asisten AI ----------
+# Dipakai untuk 3 lapis: (1) robots.txt, (2) blokir User-Agent di server (403), (3) header/meta noai.
+# Catatan: lapis 1-3 hanya menghentikan bot yang jujur memakai User-Agent aslinya. Untuk bot yang menyamar,
+# aktifkan juga Vercel Firewall (AI Bots + Bot Protection) — lihat README.
+AI_BOTS = (
+    "GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-User", "Claude-SearchBot", "Claude-Web",
+    "anthropic-ai", "CCBot", "PerplexityBot", "Perplexity-User", "Bytespider", "Amazonbot", "cohere-ai",
+    "cohere-training-data-crawler", "Diffbot", "FacebookBot", "meta-externalagent", "meta-externalfetcher",
+    "omgili", "omgilibot", "ImagesiftBot", "Timpibot", "YouBot", "DuckAssistBot", "MistralAI-User",
+    "AI2Bot", "Ai2Bot-Dolma", "PanguBot", "Google-Extended", "Applebot-Extended", "Google-CloudVertexBot",
+)
+_AI_UA = tuple(b.lower() for b in AI_BOTS)
+
+
+@app.before_request
+def block_ai_bots():
+    if request.path == "/robots.txt":  # robots.txt harus tetap bisa dibaca bot
+        return None
+    ua = (request.headers.get("User-Agent") or "").lower()
+    if ua and any(b in ua for b in _AI_UA):
+        return Response("Akses oleh crawler/asisten AI tidak diizinkan.\n", status=403, mimetype="text/plain",
+                        headers={"X-Robots-Tag": "noindex, noai, noimageai"})
+    return None
+
+
+@app.after_request
+def bot_headers(resp):
+    private = request.path in ("/dashboard", "/login", "/daftar") or request.path.startswith(("/auth/", "/api/"))
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow, noai, noimageai" if private else "noai, noimageai"
+    return resp
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    lines = []
+    for b in AI_BOTS:
+        lines += [f"User-agent: {b}", "Disallow: /", ""]
+    lines += ["User-agent: *", "Disallow: /dashboard", "Disallow: /login", "Disallow: /daftar",
+              "Disallow: /auth/", "Disallow: /api/", "Allow: /", ""]
+    return Response("\n".join(lines), mimetype="text/plain")
+
+
 DASH_HTML = r"""<!DOCTYPE html>
 <html lang="id" data-title-key="title.dash">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0612">
+<meta name="robots" content="noindex, nofollow, noai, noimageai">
 <title>Dashboard — AVEditor</title>
 <script>
 (function(){try{var m=localStorage.getItem("AVEditor-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
@@ -281,6 +324,7 @@ LANDING_MAIN = (
 
 LANDING_HTML = re.sub(r'<main class="wrap">.*?</main>', lambda m: LANDING_MAIN, DASH_HTML, count=1, flags=re.S)
 LANDING_HTML = LANDING_HTML.replace('data-title-key="title.dash"', 'data-title-key="title.home"')
+LANDING_HTML = LANDING_HTML.replace('content="noindex, nofollow, noai, noimageai"', 'content="noai, noimageai"')
 LANDING_HTML = LANDING_HTML.replace("<title>Dashboard — AVEditor</title>", "<title>AVEditor — Edit Audio & Video</title>")
 LANDING_HTML = LANDING_HTML.replace(
     '<script src="/static/ffmpeg/ffmpeg.js"></script>\n<script src="/static/app.js"></script>\n', "")
