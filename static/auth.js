@@ -6,7 +6,7 @@
   if (!card) return;
   const errEl = $('loginError'), goRegister = $('goRegister'), btnBox = $('gsiButton'), fallback = $('googleFallback');
   const clientId = card.dataset.clientId || '';
-  const nextUrl = card.dataset.next || '/';
+  const nextUrl = card.dataset.next || '/dashboard';
   const csrf = card.dataset.csrf || '';
   const mode = card.dataset.mode === 'register' ? 'register' : 'login';
   let busy = false, loadTimer = null, lastErr = null;
