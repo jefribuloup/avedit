@@ -2,19 +2,19 @@
 
 🇬🇧 English · [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)
 
-A simple audio & video editor that runs in the browser (ffmpeg.wasm). Pick a range on the waveform, cut, and download — no installation, files are processed locally on your device.
+An audio & video editing platform with personal accounts and a dashboard. Pick a range on the audio timeline, edit, and download.
 
 ## Features
-- ✂️ Cut audio/video (MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG)
+- ✂️ Edit audio/video (MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG)
 - 📁 Upload a local file or 🔗 load from a link (**https only**)
-- 🌊 Waveform with zoom/pan and draggable start/end markers
+- 🌊 Audio timeline with zoom/pan and draggable start/end markers
 - ⚡ Fast mode (no re-encode) or 🎯 Precise mode (re-encode)
 - 🌐 Multi-language: **English / Bahasa Indonesia** (auto-detected, switchable in the navbar)
 - 🌗 **Dark / Light theme** (follows system preference, switchable, remembered)
 
 ## Pages
 - `/` — landing page (features, how it works, call to action)
-- `/dashboard` — the editor (upload & cut); requires sign-in when the account database is configured
+- `/dashboard` — the editor (upload & edit); requires sign-in when the account database is configured
 - `/login`, `/daftar` — sign in / sign up (after signing in you are sent to `/dashboard`)
 
 ## Link security (https only)
@@ -59,7 +59,7 @@ Optional accounts, modeled on the [Talkins](https://github.com/jefribuloup/talki
 - **Manual**: sign-up form (name, email, username, password) and login with username *or* email. Passwords are hashed (Werkzeug); 5 wrong attempts lock the account for 15 minutes; login/sign-up are rate-limited per IP; CSRF token on every auth POST.
 - **Google**: One Tap / official Google button (ID token verified server-side: signature, audience, issuer, expiry). Falls back to OAuth 2.0 redirect (`/auth/google`) if the Google script can't load. Signing in with Google creates the account automatically if it doesn't exist.
 - Pages: `/login`, `/daftar`. Navbar shows **Sign in / Sign up**, or the user's name + **Sign out**. The account box is hidden when `DATABASE_URL` is not set, so the editor keeps working without a database.
-- `REQUIRE_LOGIN=1` makes the editor page require login (default `0`, optional). Note: editing runs in the browser, so this gates the page, not the processing.
+- `REQUIRE_LOGIN=1` makes the editor page require login (default `0`, optional).
 
 **Setup**
 1. Create a Postgres database (Neon / Vercel Postgres) → set `DATABASE_URL`. Tables are created automatically.
@@ -80,19 +80,19 @@ See [LICENSE](LICENSE).
 
 ## 🇮🇩 Bahasa Indonesia
 
-Pemotong audio & video sederhana yang berjalan di browser (ffmpeg.wasm). Pilih rentang di waveform, potong, lalu unduh — tanpa instalasi, file diproses lokal di perangkatmu.
+Platform editor audio & video dengan akun pribadi dan dashboard. Pilih rentang di timeline audio, edit, lalu unduh.
 
 ### Fitur
-- ✂️ Potong audio/video (MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG)
+- ✂️ Edit audio/video (MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG)
 - 📁 Unggah file lokal atau 🔗 ambil dari link (**hanya https**)
-- 🌊 Waveform dengan zoom/geser dan penanda awal/akhir yang bisa diseret
+- 🌊 Timeline audio dengan zoom/geser dan penanda awal/akhir yang bisa diseret
 - ⚡ Mode Cepat (tanpa re-encode) atau 🎯 Mode Presisi (re-encode)
 - 🌐 Multi bahasa: **English / Bahasa Indonesia** (terdeteksi otomatis, bisa diganti di navbar)
 - 🌗 **Tema Gelap / Terang** (mengikuti sistem, bisa diganti, tersimpan)
 
 ### Halaman
 - `/` — landing page (fitur, cara kerja, ajakan mulai)
-- `/dashboard` — editor (unggah & potong); wajib masuk jika database akun sudah dikonfigurasi
+- `/dashboard` — editor (unggah & edit); wajib masuk jika database akun sudah dikonfigurasi
 - `/login`, `/daftar` — masuk / daftar (setelah masuk diarahkan ke `/dashboard`)
 
 ### Keamanan link (hanya https)
@@ -118,7 +118,7 @@ Akun bersifat opsional, mengikuti alur auth aplikasi [Talkins](https://github.co
 - **Manual**: formulir daftar (nama, email, username, kata sandi) dan masuk dengan username *atau* email. Kata sandi di-hash; 5 kali salah mengunci akun 15 menit; login/daftar dibatasi per IP; semua POST auth memakai token CSRF.
 - **Google**: One Tap / tombol resmi Google (ID token diverifikasi di server). Cadangan: OAuth 2.0 redirect (`/auth/google`). Masuk dengan Google otomatis membuat akun bila belum ada.
 - Halaman: `/login`, `/daftar`. Navbar menampilkan **Masuk / Daftar**, atau nama pengguna + **Keluar**. Kotak akun disembunyikan bila `DATABASE_URL` belum diisi, jadi editor tetap jalan tanpa database.
-- `REQUIRE_LOGIN=1` mewajibkan login untuk halaman editor (default `0`). Catatan: pemotongan berjalan di browser, jadi yang dikunci halamannya, bukan prosesnya.
+- `REQUIRE_LOGIN=1` mewajibkan login untuk halaman editor (default `0`).
 
 **Pengaturan**
 1. Buat database Postgres (Neon / Vercel Postgres) → isi `DATABASE_URL`. Tabel dibuat otomatis.
