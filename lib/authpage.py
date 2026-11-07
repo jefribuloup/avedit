@@ -38,12 +38,12 @@ AUTH_HTML = """<!DOCTYPE html>
   <section class="login-card" id="loginCard" data-next="{{ next_url }}" data-csrf="{{ csrf_token }}" data-client-id="{{ google_client_id }}" data-mode="{{ mode }}">
     <aside class="login-side" aria-hidden="true">
       <span class="side-badge">""" + _ic("audio-lines") + """<b>AVEdit</b></span>
-      <h2 data-i18n="auth.side.title">Potong audio &amp; video tanpa ribet</h2>
-      <p data-i18n="auth.side.sub">Akun gratis untuk memakai AVEdit dari perangkat mana saja.</p>
+      <h2 data-i18n="auth.side.title">Edit audio &amp; video dengan hasil profesional</h2>
+      <p data-i18n="auth.side.sub">Satu akun untuk mengakses AVEditor dari perangkat mana saja.</p>
       <ul class="side-list">
-        <li>""" + _ic("scissors") + """<span data-i18n="auth.side.f1">Pilih bagian, potong, unduh — cepat</span></li>
-        <li>""" + _ic("audio-lines") + """<span data-i18n="auth.side.f2">Waveform, zoom, dan ketelitian hingga detik</span></li>
-        <li>""" + _ic("cloud-upload") + """<span data-i18n="auth.side.f3">File diproses langsung di browser Anda</span></li>
+        <li>""" + _ic("pencil") + """<span data-i18n="auth.side.f1">Pilih bagian, edit, unduh — cepat</span></li>
+        <li>""" + _ic("audio-lines") + """<span data-i18n="auth.side.f2">Timeline audio dengan zoom dan ketelitian hingga detik</span></li>
+        <li>""" + _ic("cloud-upload") + """<span data-i18n="auth.side.f3">Mendukung beberapa jenis file audio dan video</span></li>
       </ul>
     </aside>
     <div class="login-main">
@@ -53,7 +53,7 @@ AUTH_HTML = """<!DOCTYPE html>
     </div>
 
     {% if mode == 'register' %}
-    <h1 data-i18n="auth.h.register">Buat akun gratis</h1>
+    <h1 data-i18n="auth.h.register">Buat akun Anda</h1>
     <p class="login-sub" data-i18n="auth.sub.register">Daftar dengan formulir, atau satu klik dengan akun Google.</p>
     <form class="login-form" id="formRegister" novalidate>
       <label class="login-field"><span data-i18n="auth.f.name">Nama lengkap</span>
