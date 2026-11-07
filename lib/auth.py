@@ -82,7 +82,7 @@ def _redirect_uri():
 def _safe_next(value):
     """Cegah open-redirect: hanya path internal."""
     if not value or not value.startswith("/") or value.startswith("//") or "\\" in value:
-        return "/"
+        return "/dashboard"
     return value
 
 
@@ -181,9 +181,10 @@ def register_routes(app, index_html):
 
     @app.before_request
     def gate():
-        # Opsional (REQUIRE_LOGIN=1): halaman editor butuh login. /login, /daftar, /auth/*, /api/* tetap terbuka.
-        if _require_login() and request.path == "/" and db.configured() and not current_user():
-            return redirect("/login?" + urlencode({"next": "/"}))
+        # Dashboard (editor) khusus pengguna yang sudah masuk. Beranda (/), /login, /daftar, /auth/*, /api/* tetap terbuka.
+        # Jika database akun belum dikonfigurasi, dashboard dibiarkan terbuka agar aplikasi tetap bisa dipakai.
+        if request.path == "/dashboard" and db.configured() and not current_user():
+            return redirect("/login?" + urlencode({"next": "/dashboard"}))
         return None
 
     def _page(mode):
