@@ -1,5 +1,7 @@
 import ipaddress
+import math
 import os
+import re
 import socket
 import sys
 import urllib.error
@@ -15,13 +17,13 @@ from lib import auth  # noqa: E402
 app = Flask(__name__)
 app.secret_key = auth.load_secret_key()
 
-INDEX_HTML = r"""<!DOCTYPE html>
-<html lang="id">
+DASH_HTML = r"""<!DOCTYPE html>
+<html lang="id" data-title-key="title.dash">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0612">
-<title>AVEditor — Audio & Video Editor</title>
+<title>Dashboard — AVEditor</title>
 <script>
 (function(){try{var m=localStorage.getItem("AVEditor-theme");if(m!=="light"&&m!=="dark")m=window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.dataset.theme=m;}catch(e){document.documentElement.dataset.theme="dark";}})();
 </script>
@@ -35,7 +37,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
 
     <div class="menu" id="menu">
       <div class="menu-links">
-        <a class="nav-link" href="/" data-nav="editor">Editor</a>
+        <a class="nav-link" href="/" data-nav="home" data-i18n="nav.home">Beranda</a>
+        <a class="nav-link" href="/dashboard" data-nav="dashboard" data-i18n="nav.dashboard">Dashboard</a>
         <a class="nav-link" href="/#panduan" data-nav="guide" data-i18n="nav.guide">Panduan</a>
       </div>
       <div class="authbox" id="authBox"></div>
@@ -51,9 +54,12 @@ INDEX_HTML = r"""<!DOCTYPE html>
 </nav>
 
 <main class="wrap">
-  <header class="hero">
-    <h1 data-i18n-html="hero.title">Potong <span class="grad">Audio &amp; Video</span></h1>
-    <p class="sub" data-i18n="hero.sub">Pilih bagian yang kamu mau, potong, lalu unduh. Simpel dan cepat.</p>
+  <header class="dash-head">
+    <div>
+      <h1 data-i18n="dash.h">Dashboard</h1>
+      <p class="sub" data-i18n="dash.sub">Unggah file audio atau video, pilih bagian, lalu potong dan unduh.</p>
+    </div>
+    <span class="dash-hello" id="dashHello"></span>
   </header>
 
   <section id="editor-sec" class="card">
@@ -140,7 +146,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
     </div>
   </section>
 
-  <section id="panduan" class="card guide">
+  <section id="guide-dash" class="card guide">
     <h2 data-i18n="guide.h">Panduan singkat</h2>
     <ol>
       <li data-i18n-html="guide.1">Unggah file dari perangkat atau tempel link langsung ke file.</li>
@@ -160,7 +166,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <div class="f-col">
       <h3 data-i18n="foot.menu">Menu</h3>
       <ul>
-        <li><a href="/">Editor</a></li>
+        <li><a href="/" data-i18n="nav.home">Beranda</a></li>
+        <li><a href="/dashboard" data-i18n="nav.dashboard">Dashboard</a></li>
         <li><a href="/#panduan" data-i18n="nav.guide">Panduan</a></li>
         <li><a href="/api/health" data-i18n="foot.status">Status layanan</a></li>
       </ul>
@@ -189,14 +196,114 @@ INDEX_HTML = r"""<!DOCTYPE html>
 """
 
 
-# Login & daftar: /login, /daftar, /auth/*, /api/me (lihat lib/auth.py)
-auth.register_routes(app, INDEX_HTML)
+# ---------- Landing page (/) ----------
+def _i(name):
+    return f'<svg class="ic" aria-hidden="true"><use href="/static/icons.svg#{name}"/></svg>'
+
+
+def _bars(n=44, lo=14, hi=31):
+    out = []
+    for k in range(n):
+        h = int(22 + 62 * abs(math.sin(k * 0.62) * math.cos(k * 0.21 + 0.6)))
+        cls = ' class="on"' if lo <= k <= hi else ""
+        out.append(f'<i{cls} style="--h:{h}%;--d:{(k % 11) * -0.22:.2f}s"></i>')
+    return "".join(out)
+
+
+_FEATS = [
+    ("zap", "land.f1", "Cepat", "Mode Cepat memotong tanpa re-encode sehingga kualitas asli tetap terjaga."),
+    ("audio-lines", "land.f2", "Waveform presisi", "Zoom, geser, dan seret penanda untuk memilih bagian hingga hitungan detik."),
+    ("shield-check", "land.f3", "Privasi terjaga", "File diproses di browser Anda, bukan di server kami."),
+    ("cloud-upload", "land.f4", "File besar pun bisa", "Analisis berjalan di latar belakang sehingga halaman tetap responsif."),
+    ("monitor-smartphone", "land.f5", "Semua perangkat", "Tampilan menyesuaikan desktop, tablet, dan ponsel, lengkap dengan tema gelap dan terang."),
+    ("link", "land.f6", "Dari file atau link", "Unggah dari perangkat atau ambil langsung dari link https."),
+]
+_STEPS = [
+    ("land.s1", "Masuk", "Buat akun gratis atau masuk dengan Google untuk membuka dashboard."),
+    ("land.s2", "Unggah", "Pilih file audio/video dari perangkat, atau tempel link https."),
+    ("land.s3", "Potong & unduh", "Tandai bagian yang diinginkan, lalu unduh hasilnya."),
+]
+
+LANDING_MAIN = (
+    '<main class="land">\n'
+    '  <section class="l-hero">\n'
+    '    <div class="l-copy">\n'
+    '      <span class="l-badge">' + _i("sparkles") + '<span data-i18n="land.badge">Gratis · Langsung di browser</span></span>\n'
+    '      <h1 data-i18n-html="land.h1">Potong <span class="grad">audio &amp; video</span> tanpa ribet</h1>\n'
+    '      <p class="l-lead" data-i18n="land.lead">Pilih bagian yang Anda mau di waveform, potong dengan presisi hingga detik, lalu unduh. '
+    'Semua diproses di perangkat Anda — tanpa instalasi.</p>\n'
+    '      <div class="l-cta">\n'
+    '        <a class="l-btn primary" href="/dashboard"><span data-i18n="land.cta">Mulai sekarang</span>' + _i("arrow-right") + '</a>\n'
+    '        <a class="l-btn ghost" href="#panduan" data-no-router><span data-i18n="land.cta2">Lihat cara kerja</span></a>\n'
+    '      </div>\n'
+    '      <ul class="l-points">\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p1">Tanpa instalasi</span></li>\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p2">File tidak diunggah ke server</span></li>\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p3">Gratis dipakai</span></li>\n'
+    '      </ul>\n'
+    '    </div>\n'
+    '    <div class="l-demo" aria-hidden="true">\n'
+    '      <div class="demo-top"><i></i><i></i><i></i><span>rekaman-kelas.mp4</span></div>\n'
+    '      <div class="demo-wave">' + _bars() + '<div class="demo-sel"></div></div>\n'
+    '      <div class="demo-foot"><span class="demo-time">0:12.40 → 0:48.10</span>'
+    '<span class="demo-btn">' + _i("scissors") + '<span data-i18n="btn.cut">Potong &amp; Unduh</span></span></div>\n'
+    '    </div>\n'
+    '  </section>\n\n'
+    '  <section class="l-sec" id="fitur">\n'
+    '    <h2 data-i18n="land.fh">Semua yang Anda butuhkan untuk memotong</h2>\n'
+    '    <p class="l-sub" data-i18n="land.fs">Ringan, cepat, dan nyaman dipakai di desktop maupun ponsel.</p>\n'
+    '    <div class="l-grid">\n'
+    + "".join(
+        f'      <article class="l-feat"><div class="l-ico">{_i(ic)}</div>'
+        f'<h3 data-i18n="{k}t">{t}</h3><p data-i18n="{k}d">{d}</p></article>\n'
+        for ic, k, t, d in _FEATS
+    )
+    + '    </div>\n'
+    '  </section>\n\n'
+    '  <section class="l-sec" id="panduan">\n'
+    '    <h2 data-i18n="land.hh">Tiga langkah, selesai</h2>\n'
+    '    <p class="l-sub" data-i18n="land.hs">Dari file mentah ke hasil potongan dalam hitungan menit.</p>\n'
+    '    <ol class="l-steps">\n'
+    + "".join(
+        f'      <li class="l-step"><span class="l-num">{n}</span>'
+        f'<h3 data-i18n="{k}t">{t}</h3><p data-i18n="{k}d">{d}</p></li>\n'
+        for n, (k, t, d) in enumerate(_STEPS, 1)
+    )
+    + '    </ol>\n'
+    '  </section>\n\n'
+    '  <section class="l-band">\n'
+    '    <h2 data-i18n="land.bh">Siap memotong file pertama Anda?</h2>\n'
+    '    <p data-i18n="land.bs">Buka dashboard dan mulai dalam hitungan detik.</p>\n'
+    '    <div class="l-cta"><a class="l-btn primary" href="/dashboard"><span data-i18n="land.cta">Mulai sekarang</span>' + _i("arrow-right") + '</a></div>\n'
+    '  </section>\n'
+    '</main>'
+)
+
+LANDING_HTML = re.sub(r'<main class="wrap">.*?</main>', lambda m: LANDING_MAIN, DASH_HTML, count=1, flags=re.S)
+LANDING_HTML = LANDING_HTML.replace('data-title-key="title.dash"', 'data-title-key="title.home"')
+LANDING_HTML = LANDING_HTML.replace("<title>Dashboard — AVEditor</title>", "<title>AVEditor — Potong Audio & Video</title>")
+LANDING_HTML = LANDING_HTML.replace(
+    '<script src="/static/ffmpeg/ffmpeg.js"></script>\n<script src="/static/app.js"></script>\n', "")
+
+
+# Login & daftar: /login, /daftar, /auth/*, /api/me (lihat lib/auth.py). /dashboard dijaga di sana juga.
+auth.register_routes(app, LANDING_HTML)
+
+
+def _html(page):
+    return Response(page.replace("{{YEAR}}", str(datetime.now(timezone.utc).year)), mimetype="text/html")
 
 
 @app.get("/")
 def index():
-    html = INDEX_HTML.replace("{{YEAR}}", str(datetime.now(timezone.utc).year))
-    return Response(html, mimetype="text/html")
+    return _html(LANDING_HTML)
+
+
+@app.get("/dashboard")
+def dashboard():
+    resp = _html(DASH_HTML)
+    resp.headers["Cache-Control"] = "private, no-store"
+    return resp
 
 
 @app.get("/api/health")
