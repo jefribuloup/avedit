@@ -1,8 +1,8 @@
-# AVEdit — Audio & Video Cutter
+# AVEdit — Audio & Video Editor
 
 🇬🇧 English · [🇮🇩 Bahasa Indonesia](#-bahasa-indonesia)
 
-A simple audio & video cutter that runs in the browser (ffmpeg.wasm). Pick a range on the waveform, cut, and download — no installation, files are processed locally on your device.
+A simple audio & video editor that runs in the browser (ffmpeg.wasm). Pick a range on the waveform, cut, and download — no installation, files are processed locally on your device.
 
 ## Features
 - ✂️ Cut audio/video (MP4, MOV, WEBM, MKV, MP3, WAV, M4A, AAC, OGG)
