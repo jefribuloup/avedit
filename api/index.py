@@ -57,7 +57,7 @@ DASH_HTML = r"""<!DOCTYPE html>
   <header class="dash-head">
     <div>
       <h1 data-i18n="dash.h">Dashboard</h1>
-      <p class="sub" data-i18n="dash.sub">Unggah file audio atau video, pilih bagian, lalu potong dan unduh.</p>
+      <p class="sub" data-i18n="dash.sub">Unggah file audio atau video, pilih bagian, lalu edit dan unduh.</p>
     </div>
     <span class="dash-hello" id="dashHello"></span>
   </header>
@@ -104,7 +104,7 @@ DASH_HTML = r"""<!DOCTYPE html>
           <button type="button" id="zAll" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#maximize"/></svg><span data-i18n="z.all">Lihat semua</span></button>
         </div>
         <input type="range" id="pan" class="pan" min="0" max="0" step="0.01" value="0" aria-label="Geser tampilan">
-        <small class="hint" data-i18n="hint.wave">Seret penanda putih (awal) dan ungu (akhir) untuk memilih bagian. Klik gelombang untuk pindah posisi putar. Desktop: Ctrl + scroll = zoom, Shift + scroll = geser.</small>
+        <small class="hint" data-i18n="hint.wave">Seret penanda putih (awal) dan ungu (akhir) untuk memilih bagian. Klik timeline untuk pindah posisi putar. Desktop: Ctrl + scroll = zoom, Shift + scroll = geser.</small>
       </div>
 
       <div class="grid">
@@ -132,7 +132,7 @@ DASH_HTML = r"""<!DOCTYPE html>
 
       <div class="actions">
         <button type="button" id="preview" class="ghost"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#play"/></svg><span data-i18n="btn.preview">Putar bagian terpilih</span></button>
-        <button type="button" id="cut" class="primary"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#scissors"/></svg><span data-i18n="btn.cut">Potong &amp; Unduh</span></button>
+        <button type="button" id="cut" class="primary"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#pencil"/></svg><span data-i18n="btn.cut">Edit &amp; Unduh</span></button>
         <button type="button" id="cancel" class="danger hidden"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#x"/></svg><span data-i18n="btn.cancel">Batalkan proses</span></button>
       </div>
       <div class="actions sec">
@@ -150,9 +150,9 @@ DASH_HTML = r"""<!DOCTYPE html>
     <h2 data-i18n="guide.h">Panduan singkat</h2>
     <ol>
       <li data-i18n-html="guide.1">Unggah file dari perangkat atau tempel link langsung ke file.</li>
-      <li data-i18n-html="guide.2">Geser penanda di waveform atau isi detik Mulai &amp; Selesai. Tombol <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map-pin"/></svg> mengambil posisi player saat ini.</li>
-      <li data-i18n-html="guide.3">Pilih mode, klik <b>Potong &amp; Unduh</b>.</li>
-      <li data-i18n-html="guide.4">Salah potong? Klik <b>Reset rentang</b>, <b>Ganti file</b>, atau <b>Edit hasil ini</b> untuk memotong lagi.</li>
+      <li data-i18n-html="guide.2">Geser penanda di timeline audio atau isi detik Mulai &amp; Selesai. Tombol <svg class="ic" aria-hidden="true"><use href="/static/icons.svg#map-pin"/></svg> mengambil posisi player saat ini.</li>
+      <li data-i18n-html="guide.3">Pilih mode, klik <b>Edit &amp; Unduh</b>.</li>
+      <li data-i18n-html="guide.4">Salah edit? Klik <b>Reset rentang</b>, <b>Ganti file</b>, atau <b>Edit hasil ini</b> untuk mengedit lagi.</li>
     </ol>
   </section>
 </main>
@@ -161,7 +161,7 @@ DASH_HTML = r"""<!DOCTYPE html>
   <div class="footer-in">
     <div class="f-col f-brand">
       <a class="brand" href="/"><svg class="ic" aria-hidden="true"><use href="/static/icons.svg#audio-lines"/></svg><span>AVEditor</span></a>
-      <p data-i18n="foot.desc">Pemotong audio &amp; video sederhana yang berjalan langsung di browser. Tanpa instalasi, tanpa ribet.</p>
+      <p data-i18n="foot.desc">Platform editor audio &amp; video untuk hasil yang rapi dan presisi.</p>
     </div>
     <div class="f-col">
       <h3 data-i18n="foot.menu">Menu</h3>
@@ -211,47 +211,47 @@ def _bars(n=44, lo=14, hi=31):
 
 
 _FEATS = [
-    ("zap", "land.f1", "Cepat", "Mode Cepat memotong tanpa re-encode sehingga kualitas asli tetap terjaga."),
-    ("audio-lines", "land.f2", "Waveform presisi", "Zoom, geser, dan seret penanda untuk memilih bagian hingga hitungan detik."),
-    ("shield-check", "land.f3", "Privasi terjaga", "File diproses di browser Anda, bukan di server kami."),
-    ("cloud-upload", "land.f4", "File besar pun bisa", "Analisis berjalan di latar belakang sehingga halaman tetap responsif."),
+    ("zap", "land.f1", "Pemrosesan cepat", "Mode Cepat menjaga kualitas asli file Anda tanpa kompresi ulang."),
+    ("audio-lines", "land.f2", "Timeline presisi", "Pilih bagian yang tepat dengan zoom dan penanda hingga hitungan detik."),
+    ("folder-open", "land.f3", "Banyak format", "Edit file populer seperti MP4, MOV, WEBM, MP3, WAV, dan M4A."),
+    ("cloud-upload", "land.f4", "Siap untuk file besar", "Dirancang menangani file berukuran besar dengan proses yang tetap stabil."),
     ("monitor-smartphone", "land.f5", "Semua perangkat", "Tampilan menyesuaikan desktop, tablet, dan ponsel, lengkap dengan tema gelap dan terang."),
-    ("link", "land.f6", "Dari file atau link", "Unggah dari perangkat atau ambil langsung dari link https."),
+    ("log-in", "land.f6", "Akun &amp; dashboard pribadi", "Masuk dengan email atau Google, lalu kelola pekerjaan edit Anda dari satu tempat."),
 ]
 _STEPS = [
-    ("land.s1", "Masuk", "Buat akun gratis atau masuk dengan Google untuk membuka dashboard."),
+    ("land.s1", "Masuk", "Buat akun Anda atau masuk dengan Google untuk membuka dashboard."),
     ("land.s2", "Unggah", "Pilih file audio/video dari perangkat, atau tempel link https."),
-    ("land.s3", "Potong & unduh", "Tandai bagian yang diinginkan, lalu unduh hasilnya."),
+    ("land.s3", "Edit & unduh", "Tandai bagian yang diinginkan, lalu unduh hasilnya."),
 ]
 
 LANDING_MAIN = (
     '<main class="land">\n'
     '  <section class="l-hero">\n'
     '    <div class="l-copy">\n'
-    '      <span class="l-badge">' + _i("sparkles") + '<span data-i18n="land.badge">Gratis · Langsung di browser</span></span>\n'
-    '      <h1 data-i18n-html="land.h1">Potong <span class="grad">audio &amp; video</span> tanpa ribet</h1>\n'
-    '      <p class="l-lead" data-i18n="land.lead">Pilih bagian yang Anda mau di waveform, potong dengan presisi hingga detik, lalu unduh. '
-    'Semua diproses di perangkat Anda — tanpa instalasi.</p>\n'
+    '      <span class="l-badge">' + _i("sparkles") + '<span data-i18n="land.badge">Platform editor audio & video</span></span>\n'
+    '      <h1 data-i18n-html="land.h1">Edit <span class="grad">audio &amp; video</span> dengan hasil profesional</h1>\n'
+    '      <p class="l-lead" data-i18n="land.lead">Kelola pekerjaan edit Anda dari dashboard pribadi: timeline audio yang presisi, dua mode pengolahan, '
+    'dan dukungan file berukuran besar untuk hasil yang konsisten.</p>\n'
     '      <div class="l-cta">\n'
     '        <a class="l-btn primary" href="/dashboard"><span data-i18n="land.cta">Mulai sekarang</span>' + _i("arrow-right") + '</a>\n'
     '        <a class="l-btn ghost" href="#panduan" data-no-router><span data-i18n="land.cta2">Lihat cara kerja</span></a>\n'
     '      </div>\n'
     '      <ul class="l-points">\n'
-    '        <li>' + _i("check") + '<span data-i18n="land.p1">Tanpa instalasi</span></li>\n'
-    '        <li>' + _i("check") + '<span data-i18n="land.p2">File tidak diunggah ke server</span></li>\n'
-    '        <li>' + _i("check") + '<span data-i18n="land.p3">Gratis dipakai</span></li>\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p1">Akun &amp; dashboard pribadi</span></li>\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p2">Mendukung beberapa jenis file audio dan video</span></li>\n'
+    '        <li>' + _i("check") + '<span data-i18n="land.p3">Presisi hingga hitungan detik</span></li>\n'
     '      </ul>\n'
     '    </div>\n'
     '    <div class="l-demo" aria-hidden="true">\n'
     '      <div class="demo-top"><i></i><i></i><i></i><span>rekaman-kelas.mp4</span></div>\n'
     '      <div class="demo-wave">' + _bars() + '<div class="demo-sel"></div></div>\n'
     '      <div class="demo-foot"><span class="demo-time">0:12.40 → 0:48.10</span>'
-    '<span class="demo-btn">' + _i("scissors") + '<span data-i18n="btn.cut">Potong &amp; Unduh</span></span></div>\n'
+    '<span class="demo-btn">' + _i("pencil") + '<span data-i18n="btn.cut">Edit &amp; Unduh</span></span></div>\n'
     '    </div>\n'
     '  </section>\n\n'
     '  <section class="l-sec" id="fitur">\n'
-    '    <h2 data-i18n="land.fh">Semua yang Anda butuhkan untuk memotong</h2>\n'
-    '    <p class="l-sub" data-i18n="land.fs">Ringan, cepat, dan nyaman dipakai di desktop maupun ponsel.</p>\n'
+    '    <h2 data-i18n="land.fh">Fitur yang mendukung pekerjaan Anda</h2>\n'
+    '    <p class="l-sub" data-i18n="land.fs">Dirancang untuk alur kerja yang efisien di desktop maupun ponsel.</p>\n'
     '    <div class="l-grid">\n'
     + "".join(
         f'      <article class="l-feat"><div class="l-ico">{_i(ic)}</div>'
@@ -262,7 +262,7 @@ LANDING_MAIN = (
     '  </section>\n\n'
     '  <section class="l-sec" id="panduan">\n'
     '    <h2 data-i18n="land.hh">Tiga langkah, selesai</h2>\n'
-    '    <p class="l-sub" data-i18n="land.hs">Dari file mentah ke hasil potongan dalam hitungan menit.</p>\n'
+    '    <p class="l-sub" data-i18n="land.hs">Alur kerja yang jelas dari file mentah hingga hasil akhir.</p>\n'
     '    <ol class="l-steps">\n'
     + "".join(
         f'      <li class="l-step"><span class="l-num">{n}</span>'
@@ -272,8 +272,8 @@ LANDING_MAIN = (
     + '    </ol>\n'
     '  </section>\n\n'
     '  <section class="l-band">\n'
-    '    <h2 data-i18n="land.bh">Siap memotong file pertama Anda?</h2>\n'
-    '    <p data-i18n="land.bs">Buka dashboard dan mulai dalam hitungan detik.</p>\n'
+    '    <h2 data-i18n="land.bh">Siap meningkatkan alur kerja edit Anda?</h2>\n'
+    '    <p data-i18n="land.bs">Masuk ke dashboard dan mulai mengedit.</p>\n'
     '    <div class="l-cta"><a class="l-btn primary" href="/dashboard"><span data-i18n="land.cta">Mulai sekarang</span>' + _i("arrow-right") + '</a></div>\n'
     '  </section>\n'
     '</main>'
@@ -281,7 +281,7 @@ LANDING_MAIN = (
 
 LANDING_HTML = re.sub(r'<main class="wrap">.*?</main>', lambda m: LANDING_MAIN, DASH_HTML, count=1, flags=re.S)
 LANDING_HTML = LANDING_HTML.replace('data-title-key="title.dash"', 'data-title-key="title.home"')
-LANDING_HTML = LANDING_HTML.replace("<title>Dashboard — AVEditor</title>", "<title>AVEditor — Potong Audio & Video</title>")
+LANDING_HTML = LANDING_HTML.replace("<title>Dashboard — AVEditor</title>", "<title>AVEditor — Edit Audio & Video</title>")
 LANDING_HTML = LANDING_HTML.replace(
     '<script src="/static/ffmpeg/ffmpeg.js"></script>\n<script src="/static/app.js"></script>\n', "")
 
